@@ -55,6 +55,9 @@ button.danger{color:var(--bad)}
 .logo{width:64px;height:64px;border-radius:16px;margin:0 auto 10px;display:block}
 .center{text-align:center}
 .code{font:800 30px/1 ui-monospace,monospace;letter-spacing:4px;color:var(--pri);margin:10px 0}
+.inst{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));max-width:536px;margin:0 auto;background:var(--card);border:2px solid var(--pri);border-radius:18px;padding:14px;z-index:15;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.inst.top{bottom:auto;top:12px}
+.inst img{width:44px;height:44px;border-radius:11px}
 </style>
 </head>
 <body>
@@ -236,6 +239,26 @@ function render(){
   a.innerHTML=`<div class="wrap">${v}</div><div class="nav">${tabs.map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render()"><span>${i}</span>${n}</button>`).join('')}</div>`;
 }
 
+
+// ---- instalación como app ----
+let DP=null;
+const standalone=()=>matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function installBanner(){
+  document.querySelector('.inst')?.remove();
+  if(standalone()||ls.get('jr_inst_no',0)>Date.now())return;
+  let body='';
+  if(DP)body=`<button class="pri" style="width:100%" onclick="doInstall()">Instalar</button>`;
+  else if(isIOS())body=`<div class="mute">Toca <b>Compartir ⬆️</b> y luego <b>“Agregar a inicio”</b>.</div>`;
+  else return;
+  const d=document.createElement('div');d.className='inst'+(S.code?'':' top');
+  d.innerHTML=`<div class="row" style="margin-bottom:10px"><img src="icon.svg" alt=""><div class="sp"><b>Instala Jornada como app</b><div class="mute">Acceso directo y pantalla completa.</div></div></div>${body}<button class="ghost" style="width:100%;margin-top:4px" onclick="ls.set('jr_inst_no',Date.now()+6048e5);this.closest('.inst').remove()">Ahora no</button>`;
+  document.body.appendChild(d);
+}
+async function doInstall(){if(!DP)return;DP.prompt();await DP.userChoice;DP=null;document.querySelector('.inst')?.remove()}
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DP=e;installBanner()});
+window.addEventListener('appinstalled',()=>{DP=null;document.querySelector('.inst')?.remove()});
+
 // ---- arranque ----
 (async()=>{
   applyTheme();
@@ -244,6 +267,7 @@ function render(){
   else render();
   setInterval(async()=>{if(S.code&&!document.querySelector('.modal')&&document.visibilityState==='visible'){if(await refresh())render()}},30000);
   document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&S.code&&!document.querySelector('.modal')){if(await refresh())render()}});
+  setTimeout(installBanner,1200);
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
