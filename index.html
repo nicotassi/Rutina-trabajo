@@ -596,6 +596,7 @@ function viewAjustes(){
   <div class="card"><label>Código del equipo</label><div class="code" style="margin:4px 0">${esc(S.code)}</div></div>
   <div class="card"><label>Tema</label><div class="pills">${[['auto','Auto'],['light','Claro'],['dark','Oscuro']].map(([v,n])=>`<button class="${th===v?'on':''}" onclick="setTheme('${v}')">${n}</button>`).join('')}</div></div>
   <div class="card"><label>Tamaño del texto</label><div class="pills">${[['s','Pequeño'],['n','Normal'],['l','Grande'],['xl','Muy grande']].map(([v,n])=>`<button class="${ls.get('jr_fs','n')===v?'on':''}" onclick="setFS('${v}')">${n}</button>`).join('')}</div></div>
+  ${installCard()}
   ${pushCard()}
   ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
   <div class="mute center" style="margin:4px 0 12px">Última sincronización: ${LASTSYNC?new Date(LASTSYNC).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—'}${pendingN()?' · '+pendingN()+' cambio(s) sin enviar':''}</div>
@@ -608,16 +609,23 @@ async function doSet(w){const v=$('#sv').value.trim();try{await rpc('jr_set',{p_
 let DP=null;
 const standalone=()=>matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const inApp=()=>isIOS()&&!/safari/i.test(navigator.userAgent);
+function installHow(){
+  if(DP)return `<button class="pri" style="width:100%" onclick="doInstall()">Instalar</button>`;
+  if(inApp())return `<div class="mute">Estás en el navegador de otra app (WhatsApp, Instagram…). Toca el menú <b>···</b> o el ícono de la brújula y elige <b>“Abrir en Safari”</b>. Ahí toca <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</div>`;
+  if(isIOS())return `<div class="mute">Toca el botón <b>Compartir</b> (el cuadrado con la flecha hacia arriba, abajo en Safari) y luego <b>“Agregar a inicio”</b>.</div>`;
+  return `<div class="mute">En el menú del navegador (<b>⋮</b>) elige <b>“Instalar app”</b> o <b>“Agregar a pantalla de inicio”</b>.</div>`;
+}
 function installBanner(){
   document.querySelector('.inst')?.remove();
   if(standalone()||ls.get('jr_inst_no',0)>Date.now())return;
-  let body='';
-  if(DP)body=`<button class="pri" style="width:100%" onclick="doInstall()">Instalar</button>`;
-  else if(isIOS())body=`<div class="mute">Toca <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</div>`;
-  else return;
   const d=document.createElement('div');d.className='inst'+(S.code?'':' top2');
-  d.innerHTML=`<div class="row" style="margin-bottom:10px"><img src="icon.svg" alt=""><div class="sp"><b>Instala Jornada como app</b><div class="mute">Acceso directo y pantalla completa.</div></div></div>${body}<button class="ghost" style="width:100%;margin-top:4px" onclick="ls.set('jr_inst_no',Date.now()+6048e5);this.closest('.inst').remove()">Ahora no</button>`;
+  d.innerHTML=`<div class="row" style="margin-bottom:10px"><img src="icon.svg" alt=""><div class="sp"><b>Instala Jornada como app</b><div class="mute">Acceso directo y pantalla completa.</div></div></div>${installHow()}<button class="ghost" style="width:100%;margin-top:4px" onclick="ls.set('jr_inst_no',Date.now()+864e5);this.closest('.inst').remove()">Ahora no</button>`;
   document.body.appendChild(d);
+}
+function installCard(){
+  if(standalone())return '';
+  return `<div class="card"><label>Instalar como app</label><p style="margin:4px 0 8px"></p>${installHow()}</div>`;
 }
 async function doInstall(){if(!DP)return;DP.prompt();await DP.userChoice;DP=null;document.querySelector('.inst')?.remove()}
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DP=e;installBanner()});
@@ -638,10 +646,11 @@ function render(){
 // ---------- arranque ----------
 (async()=>{
   applyTheme();
+  setTimeout(installBanner,1200);
   const au=ls.get('jr_auth'),c=ls.get('jr_cache');
   if(au&&c){S.pin=au.pin;apply(c);render();await flush();render();checkPush()}
   else render();
-  setTimeout(installBanner,1200);if(TM)tmBar();
+  if(TM)tmBar();
   const sync=async()=>{if(S.code&&!document.querySelector('.modal')&&document.visibilityState==='visible'){await flush();render()}};
   setInterval(sync,30000);
   document.addEventListener('visibilitychange',sync);
