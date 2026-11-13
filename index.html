@@ -103,6 +103,8 @@ button[disabled]{opacity:.4;cursor:default}
 .tbar.brk button{background:rgba(0,0,0,.08);border-color:rgba(0,0,0,.2)}
 .tbar button.pri{background:linear-gradient(180deg,#dfbc69,#c0973f);border-color:#c0973f;color:#1a1406}
 .tbar.brk button.pri{background:#0b0b0c;color:#dcb966;border-color:#0b0b0c}
+.selbar{position:fixed;left:12px;right:12px;bottom:calc(66px + env(safe-area-inset-bottom));max-width:536px;margin:0 auto;background:var(--card);border:1px solid var(--pri);border-radius:12px;padding:9px 10px;z-index:12;display:flex;align-items:center;gap:6px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.selbar button{padding:7px 10px;font-size:.8rem}
 .trow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 .wks{display:flex;gap:6px;margin-top:11px}.wk{flex:1;text-align:center;padding:7px 0;border-radius:6px;font-size:0.8125rem;font-weight:500;background:var(--bd);color:var(--mu)}
 .wk.ok{background:linear-gradient(180deg,var(--gf1),var(--gf2));color:#1a1406}.wk.bad{background:color-mix(in srgb,var(--bad) 14%,var(--card));color:var(--bad)}.wk.cur{background:var(--pri2);color:var(--pri)}.wk.na{opacity:.35}
@@ -454,7 +456,35 @@ function viewStats(){
   <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente</div>'}`;
 }
 // ----- tareas y bloques (supervisor) -----
-function taskLine(k,bn){const b=bn&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${b?esc(b.name)+' · ':''}${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div><span class="mute">›</span></div>`}
+function taskLine(k,bn){const b=bn&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card row" onclick="${SELM?`togSel('${k.id}')`:`taskModal('${k.id}')`}">${SELM?`<div class="chk ${SEL.has(k.id)?'on':''}">${SEL.has(k.id)?'✓':''}</div>`:''}<div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${b?esc(b.name)+' · ':''}${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div>${SELM?'':'<span class="mute">›</span>'}</div>`}
+let SELM=false,SEL=new Set(),XT=null;
+const others=()=>(S.members||[]).filter(m=>m.id!==curWho());
+function togSel(id){SEL.has(id)?SEL.delete(id):SEL.add(id);render()}
+function selMode(on){SELM=on;SEL=new Set();render()}
+function selAll(){const ids=S.cfg.tasks.filter(k=>!k.arch&&mine(k)).map(k=>k.id);SEL=SEL.size===ids.length?new Set():new Set(ids);render()}
+function selBar(){
+  if(!SELM)return '';
+  return `<div style="height:76px"></div><div class="selbar"><div class="sp"><b>${SEL.size}</b> <span class="mute">seleccionada${SEL.size===1?'':'s'}</span></div><button onclick="selAll()">Todas</button><button class="pri" ${SEL.size?'':'disabled'} onclick="xferStart([...SEL],'copy')">Copiar</button><button ${SEL.size?'':'disabled'} onclick="xferStart([...SEL],'move')">Reasignar</button><button class="ghost" onclick="selMode(false)">Cancelar</button></div>`;
+}
+function xferStart(ids,mode){
+  const o=others();if(!o.length)return toast('Agrega otro usuario primero');
+  closeModal();XT={ids,mode,sel:new Set(mode==='move'&&o.length===1?[o[0].id]:[])};drawX();
+}
+function xferPick(id){if(XT.mode==='move')XT.sel=new Set([id]);else XT.sel.has(id)?XT.sel.delete(id):XT.sel.add(id);drawX()}
+function drawX(){
+  const n=XT.ids.length,mv=XT.mode==='move';
+  modal(`<h3>${mv?'Reasignar':'Copiar'} ${n} tarea${n===1?'':'s'}</h3><p class="mute">${mv?'Pasan al usuario que elijas y dejan de estar en '+esc(whoName())+'. Su historial queda en '+esc(whoName())+'.':'Se crea una copia para cada usuario que elijas. Las originales no cambian.'}</p>
+  <label>${mv?'Pasar a':'Copiar a'}</label><div class="pills">${others().map(m=>`<button class="${XT.sel.has(m.id)?'on':''}" onclick="xferPick('${m.id}')">${esc(m.name)}</button>`).join('')}</div>
+  <button class="pri" style="width:100%" ${XT.sel.size?'':'disabled'} onclick="xferDo()">${mv?'Reasignar':'Copiar'}</button>`);
+}
+function xferDo(){
+  const mv=XT.mode==='move',t=today(),targets=[...XT.sel];let made=0;
+  XT.ids.forEach(id=>{const k=S.cfg.tasks.find(x=>x.id===id);if(!k||k.arch)return;
+    targets.forEach(w=>{const c={...k,id:uid(),who:w,from:t};delete c.arch;S.cfg.tasks.push(c);made++});
+    if(mv)k.arch=t});
+  const names=targets.map(w=>((S.members||[]).find(m=>m.id===w)||{}).name).filter(Boolean).join(' y ');
+  closeModal();XT=null;SELM=false;SEL=new Set();saveCfg();toast((mv?'Reasignadas a ':'Copiadas a ')+names);
+}
 let TV=ls.get('jr_tview','bloque');
 function setTV(v){TV=v;ls.set('jr_tview',v);render()}
 const avgSec=id=>{const r=recs().filter(e=>e.task===id);return r.length?r.reduce((a,e)=>a+e.sec,0)/r.length:0};
@@ -479,10 +509,10 @@ function dayView(ts){
 }
 function viewTareas(){
   const ts=S.cfg.tasks.filter(k=>!k.arch&&mine(k)),bl=S.cfg.blocks||[];
-  return `<div class="head"><h1>Tareas</h1><div class="row"><button onclick="blockModal()">+ Bloque</button><button class="pri" onclick="taskModal()">+ Tarea</button></div></div>
+  return `<div class="head"><h1>Tareas</h1><div class="row">${(S.members||[]).length>1?`<button onclick="selMode(${!SELM})">${SELM?'Listo':'Seleccionar'}</button>`:''}<button onclick="blockModal()">+ Bloque</button><button class="pri" onclick="taskModal()">+ Tarea</button></div></div>
   ${whoBar()}<div class="pills" style="margin-top:-4px"><button class="${TV==='bloque'?'on':''}" onclick="setTV('bloque')">Por bloque</button><button class="${TV==='dia'?'on':''}" onclick="setTV('dia')">Por día de la semana</button></div>
   ${!ts.length&&!bl.length?'<div class="card mute">Aquí armas todo tú. Crea <b>bloques</b> (por ejemplo "Mañana" o "Atención a clientes") y dentro agrega <b>tareas</b>, cada una con sus <b>subtareas</b> si lo necesitas.</div>':''}
-  ${TV==='dia'?dayView(ts):blockView(ts,bl)}`;
+  ${TV==='dia'?dayView(ts):blockView(ts,bl)}${selBar()}`;
 }
 let TF={};
 function blockModal(id){const b=(S.cfg.blocks||[]).find(x=>x.id===id);
@@ -491,16 +521,18 @@ function saveBlock(id){const n=$('#bn').value.trim();if(!n)return toast('Ponle u
 function delBlock(id){if(!confirm('¿Eliminar este bloque?'))return;S.cfg.blocks=S.cfg.blocks.filter(x=>x.id!==id);S.cfg.tasks.forEach(k=>{if(k.block===id)k.block=''});closeModal();saveCfg()}
 function taskModal(id){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  TF=k?{...k,who:k.who||'main',days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1,who:curWho()};
+  TF=k?{...k,who:k.who||'main',days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1,who:curWho(),whos:[curWho()]};
   drawTask();
 }
-function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm')?g('tm').value:'';if(g('tw'))TF.times=+g('tw').value;TF.essential=g('te').checked;TF.block=g('tb').value;if(g('tu'))TF.who=g('tu').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
+function togWho(id){syncTF();if(TF.id)TF.who=id;else{const w=TF.whos||[];TF.whos=w.includes(id)?(w.length>1?w.filter(x=>x!==id):w):[...w,id]}drawTask()}
+function xferFromEdit(mode){const id=TF.id;closeModal();xferStart([id],mode)}
+function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm')?g('tm').value:'';if(g('tw'))TF.times=+g('tw').value;TF.essential=g('te').checked;TF.block=g('tb').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
 function drawTask(){
   const bl=S.cfg.blocks||[];
   modal(`<h3>${TF.id?'Editar tarea':'Nueva tarea'}</h3>
   <label>Tarea</label><input id="tt" value="${esc(TF.title)}" placeholder="Ej: Responder consultas de clientes">
   <label>Detalle (opcional)</label><input id="td" value="${esc(TF.desc)}">
-  ${(S.members||[]).length>1?`<label>Asignada a</label><select id="tu">${S.members.map(m=>`<option value="${m.id}" ${TF.who===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>`:''}
+  ${(S.members||[]).length>1?`<label>${TF.id?'Asignada a':'Asignar a (uno o varios)'}</label><div class="pills">${S.members.map(m=>`<button class="${(TF.id?TF.who===m.id:(TF.whos||[]).includes(m.id))?'on':''}" onclick="togWho('${m.id}')">${esc(m.name)}</button>`).join('')}</div>`:''}
   <label>Bloque</label><select id="tb"><option value="">Sin bloque</option>${bl.map(b=>`<option value="${b.id}" ${TF.block===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
   <label>Subtareas (opcional, una por línea)</label><textarea id="ts" rows="3" placeholder="Ej: Revisar la bandeja de entrada">${esc((TF.steps||[]).join('\n'))}</textarea>
   <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button><button class="${TF.kind==='semanal'?'on':''}" onclick="syncTF();TF.kind='semanal';drawTask()">Semanal</button></div>
@@ -508,13 +540,16 @@ function drawTask(){
   ${TF.kind==='semanal'?'':`<label>Hora límite (opcional)</label><input id="tm" type="time" value="${TF.time||''}">`}
   <label class="row" style="color:var(--tx);text-transform:none;font-size:0.9062rem;letter-spacing:0"><input id="te" type="checkbox" style="width:auto;margin:0" ${TF.essential?'checked':''}> Prioritaria</label><p></p>
   <button class="pri" style="width:100%" onclick="saveTask()">Guardar</button>
+  ${TF.id&&(S.members||[]).length>1?`<div class="row" style="margin-top:10px"><button class="sp" onclick="xferFromEdit('copy')">Copiar a otro usuario</button><button class="sp" onclick="xferFromEdit('move')">Reasignar</button></div>`:''}
   ${TF.id?`<p class="center"><button class="ghost danger" onclick="delTask()">Eliminar tarea</button></p>`:''}`);
 }
 function saveTask(){
   syncTF();if(!TF.title.trim())return toast('Ponle un nombre');
   if(TF.kind==='fija'&&!TF.days.length)return toast('Elige al menos un día');
   const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.kind==='semanal'?'':(TF.time||''),times:TF.kind==='semanal'?(TF.times||1):null,essential:TF.essential,steps:TF.steps||[],block:TF.block||'',who:TF.who||curWho(),from:TF.from||today()};
-  const i=S.cfg.tasks.findIndex(x=>x.id===o.id);if(i>=0)S.cfg.tasks[i]=o;else S.cfg.tasks.push(o);
+  const i=S.cfg.tasks.findIndex(x=>x.id===o.id);
+  if(i>=0)S.cfg.tasks[i]=o;
+  else (TF.whos&&TF.whos.length?TF.whos:[curWho()]).forEach((w,n)=>S.cfg.tasks.push({...o,id:n?uid():o.id,who:w}));
   closeModal();saveCfg();
 }
 function delTask(){if(!confirm('¿Eliminar esta tarea? El historial se mantiene.'))return;const k=S.cfg.tasks.find(x=>x.id===TF.id);if(k)k.arch=today();closeModal();saveCfg()}
