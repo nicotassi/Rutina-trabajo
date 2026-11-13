@@ -17,7 +17,7 @@
 [data-theme=dark]{--bg:#0a0a0b;--card:#131315;--tx:#ece6d6;--mu:#8e8878;--bd:#27241d;--pri:#d4af5f;--pri2:#1b170e;--gf1:#dfbc69;--gf2:#c0973f;--ok:#86b57f;--bad:#dc7a6d;--warn:#e29a55;--top:#070708;--topx:#ece6d6}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%;font-size:16px}
-[data-fs=l]{font-size:18px}[data-fs=xl]{font-size:20px}
+[data-fs=s]{font-size:14.5px}[data-fs=l]{font-size:18px}[data-fs=xl]{font-size:20px}
 body{margin:0;background:var(--bg);color:var(--tx);font:400 1rem/1.55 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;letter-spacing:.005em;font-feature-settings:"cv11","tnum";-webkit-font-smoothing:antialiased;padding-bottom:78px}
 body.hastm{padding-bottom:160px}
 .top{position:sticky;top:0;z-index:6;background:var(--top);color:var(--topx);border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:10px;padding:9px 18px;padding-top:calc(9px + env(safe-area-inset-top))}
@@ -556,7 +556,7 @@ function viewAjustes(){
   return `<div class="head"><h1>Ajustes</h1></div>
   <div class="card"><label>Código del equipo</label><div class="code" style="margin:4px 0">${esc(S.code)}</div></div>
   <div class="card"><label>Tema</label><div class="pills">${[['auto','Auto'],['light','Claro'],['dark','Oscuro']].map(([v,n])=>`<button class="${th===v?'on':''}" onclick="setTheme('${v}')">${n}</button>`).join('')}</div></div>
-  <div class="card"><label>Tamaño del texto</label><div class="pills">${[['n','Normal'],['l','Grande'],['xl','Muy grande']].map(([v,n])=>`<button class="${ls.get('jr_fs','n')===v?'on':''}" onclick="setFS('${v}')">${n}</button>`).join('')}</div></div>
+  <div class="card"><label>Tamaño del texto</label><div class="pills">${[['s','Pequeño'],['n','Normal'],['l','Grande'],['xl','Muy grande']].map(([v,n])=>`<button class="${ls.get('jr_fs','n')===v?'on':''}" onclick="setFS('${v}')">${n}</button>`).join('')}</div></div>
   ${pushCard()}
   ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
   <button class="danger" style="width:100%" onclick="logout()">Cerrar sesión</button>`;
