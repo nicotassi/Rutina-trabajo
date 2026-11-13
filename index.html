@@ -131,7 +131,19 @@ const longD=s=>dt(s).toLocaleDateString('es',{weekday:'long',day:'numeric',month
 const nowHM=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
 const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
+// Las operaciones de sesión, eventos y usuarios pasan por la función de servidor 'jr'; el resto usa la base directamente.
+const EDGE=new Set(['jr_login','jr_event','jr_set','jr_member_add','jr_member_set','jr_push_sub','jr_push_off']);
 async function rpc(fn,args){
+  if(EDGE.has(fn)){
+    let r;
+    try{r=await fetch(`${SB}/functions/v1/jr`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify({fn,args})})}
+    catch{throw new Error('Error de conexión')}
+    if(r.status!==404){
+      const j=await r.json().catch(()=>null);
+      if(!r.ok||!j||!j.ok)throw new Error((j&&j.message)||'Error de conexión');
+      return j.data;
+    }
+  }
   const r=await fetch(`${SB}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
   const j=await r.json().catch(()=>null);
   if(!r.ok)throw new Error((j&&j.message)||'Error de conexión');
