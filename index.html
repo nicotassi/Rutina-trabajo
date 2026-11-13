@@ -96,6 +96,10 @@ button[disabled]{opacity:.45;cursor:default}
 .tbar button.pri{background:#fff;color:#0f172a}
 .wks{display:flex;gap:6px;margin-top:10px}.wk{flex:1;text-align:center;padding:7px 0;border-radius:8px;font-size:12.5px;font-weight:600;background:var(--bd);color:var(--mu)}
 .wk.ok{background:var(--pri);color:#fff}[data-theme=dark] .wk.ok{color:#04201d}.wk.bad{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad)}.wk.cur{background:var(--pri2);color:var(--pri)}.wk.na{opacity:.35}
+.ld{display:flex;gap:8px;align-items:flex-end;height:104px}
+.ld div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}
+.ld span{font-size:13px;font-weight:700}.ld small{font-size:11px;color:var(--mu);font-weight:500}
+.ld b{display:block;width:100%;border-radius:5px 5px 2px 2px;background:var(--pri)}.ld b.hi{background:var(--warn)}
 .trow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 </style>
 </head>
@@ -374,14 +378,35 @@ function viewStats(){
   <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente</div>'}`;
 }
 // ----- tareas y bloques (supervisor) -----
-function taskLine(k){return `<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div><span class="mute">›</span></div>`}
+function taskLine(k,bn){const b=bn&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${b?esc(b.name)+' · ':''}${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div><span class="mute">›</span></div>`}
+let TV=ls.get('jr_tview','bloque');
+function setTV(v){TV=v;ls.set('jr_tview',v);render()}
+const avgSec=id=>{const r=recs().filter(e=>e.task===id);return r.length?r.reduce((a,e)=>a+e.sec,0)/r.length:0};
+function blockView(ts,bl){
+  const loose=ts.filter(k=>!bl.some(b=>b.id===k.block));
+  return `${bl.map(b=>{const l=ts.filter(k=>k.block===b.id);return `<div class="bh"><b>${esc(b.name)}</b><button class="ghost" onclick="blockModal('${b.id}')">Editar bloque</button></div>${l.length?l.map(k=>taskLine(k)).join(''):'<div class="card mute center">Sin tareas en este bloque</div>'}`}).join('')}
+  ${loose.length?`${bl.length?'<div class="bh"><b>Sin bloque</b></div>':''}${loose.map(k=>taskLine(k)).join('')}`:''}`;
+}
+function dayView(ts){
+  const t=today(),ws=wkStart(t),order=[1,2,3,4,5,6,0],full=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const fijas=ts.filter(k=>k.kind==='fija'),punt=ts.filter(k=>k.kind==='puntual'),sem=ts.filter(k=>k.kind==='semanal');
+  const byTime=(a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99');
+  const cols=order.map((x,i)=>{const date=addD(ws,i);const l=[...fijas.filter(k=>(k.days||[]).includes(x)),...punt.filter(k=>k.date===date)].sort(byTime);return{x,i,date,l,est:l.reduce((a,k)=>a+avgSec(k.id),0)}});
+  const mx=Math.max(1,...cols.map(c=>c.l.length)),act=cols.filter(c=>c.l.length),avg=act.length?act.reduce((a,c)=>a+c.l.length,0)/act.length:0,hi=c=>c.l.length>=3&&c.l.length>=avg+1;
+  const wkEnd=addD(ws,6),others=punt.filter(k=>k.date<ws||k.date>wkEnd).sort((a,b)=>a.date.localeCompare(b.date));
+  return `<div class="card"><h3>Carga por día</h3><div class="ld">${cols.map(c=>`<div><span>${c.l.length}</span><b class="${hi(c)?'hi':''}" style="height:${Math.round(c.l.length/mx*64)+4}px"></b><small>${DN[c.x]}</small></div>`).join('')}</div>
+  <div class="mute" style="margin-top:8px">Tareas con día fijo y puntuales de esta semana. En naranja, los días más cargados.${sem.length?` Además hay ${sem.length} semanal${sem.length===1?'':'es'} sin día fijo.`:''}</div></div>
+  ${cols.map(c=>`<div class="bh"><b>${full[c.i]}${hi(c)?' · carga alta':''}</b><span class="mute">${c.l.length} ${c.l.length===1?'tarea':'tareas'}${c.est>0?' · ~'+fmtMin(c.est):''}</span></div>${c.l.length?c.l.map(k=>taskLine(k,true)).join(''):'<div class="card mute center">Sin tareas</div>'}`).join('')}
+  ${sem.length?`<div class="bh"><b>Semanales (cualquier día)</b></div>${sem.map(k=>taskLine(k,true)).join('')}`:''}
+  ${others.length?`<div class="bh"><b>Puntuales en otras fechas</b></div>${others.map(k=>taskLine(k,true)).join('')}`:''}
+  <div class="mute center" style="margin-top:4px">~ = tiempo estimado según lo que ella tardó en esas tareas.</div>`;
+}
 function viewTareas(){
   const ts=S.cfg.tasks.filter(k=>!k.arch),bl=S.cfg.blocks||[];
-  const loose=ts.filter(k=>!bl.some(b=>b.id===k.block));
   return `<div class="head"><h1>Tareas</h1><div class="row"><button onclick="blockModal()">+ Bloque</button><button class="pri" onclick="taskModal()">+ Tarea</button></div></div>
+  <div class="pills" style="margin-top:-4px"><button class="${TV==='bloque'?'on':''}" onclick="setTV('bloque')">Por bloque</button><button class="${TV==='dia'?'on':''}" onclick="setTV('dia')">Por día de la semana</button></div>
   ${!ts.length&&!bl.length?'<div class="card mute">Aquí armas todo tú. Crea <b>bloques</b> (por ejemplo "Mañana" o "Atención a clientes") y dentro agrega <b>tareas</b>, cada una con sus <b>subtareas</b> si lo necesitas.</div>':''}
-  ${bl.map(b=>{const l=ts.filter(k=>k.block===b.id);return `<div class="bh"><b>${esc(b.name)}</b><button class="ghost" onclick="blockModal('${b.id}')">Editar bloque</button></div>${l.length?l.map(taskLine).join(''):'<div class="card mute center">Sin tareas en este bloque</div>'}`}).join('')}
-  ${loose.length?`${bl.length?'<div class="bh"><b>Sin bloque</b></div>':''}${loose.map(taskLine).join('')}`:''}`;
+  ${TV==='dia'?dayView(ts):blockView(ts,bl)}`;
 }
 let TF={};
 function blockModal(id){const b=(S.cfg.blocks||[]).find(x=>x.id===id);
