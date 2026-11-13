@@ -157,6 +157,9 @@ let OUT=ls.get('jr_outbox',[]),LASTSYNC=0,FL=false,AG=false,CREATING=false;
 const curWho=()=>boss()?(S.who||'main'):(S.me||'main');
 const mine=k=>(k.who||'main')===curWho();
 const whoName=()=>{if(!boss())return S.name;const m=(S.members||[]).find(x=>x.id===curWho());return m?m.name:S.name};
+const isSelf=()=>boss()&&!!S.cfg.self&&S.cfg.self===curWho();
+const asBoss=()=>boss()&&!isSelf();
+const canAct=d=>d===today()&&(!boss()||isSelf());
 const rescope=()=>{S.ev=(S.evAll||[]).filter(e=>(e.u||'main')===curWho())};
 function setWho(id){S.who=id;ls.set('jr_who',id);rescope();render()}
 function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;S.me=r.me||'main';S.multi=Array.isArray(r.members)&&r.role==='boss';
@@ -258,7 +261,7 @@ async function pushCfg(){
   return true;
 }
 async function toggleSub(id,i){
-  const d=S.day;if(d!==today()||boss())return;
+  const d=S.day;if(!canAct(d))return;
   await send({type:'note',kind:'sub',task:id,d,i,on:!subOn(id,d,i)});
 }
 function markDone(id){closeModal();send({type:'done',task:id,d:today(),tm:nowHM()});toast('Tarea terminada')}
@@ -385,8 +388,8 @@ function createForm(){return `<h3>Crear equipo</h3><label>Nombre de tu compañer
 
 function taskRow(k,d){
   const wkly=k.kind==='semanal',tg=k.times||1,wc=wkly?wkCount(k,d):0;
-  const on=wkly?(wc>=tg?(status(k.id,d)||{tm:''}):null):status(k.id,d),late=wkly?false:isLate(k,d),ns=notesFor(k.id,d),can=!boss()&&d===today();
-  const tsec=wkly?wkTime(k,d):timeOn(k.id,d),live=boss()&&activeNow(k.id,d),mine=!!TM&&TM.task===k.id&&TM.d===d;
+  const on=wkly?(wc>=tg?(status(k.id,d)||{tm:''}):null):status(k.id,d),late=wkly?false:isLate(k,d),ns=notesFor(k.id,d),can=canAct(d);
+  const tsec=wkly?wkTime(k,d):timeOn(k.id,d),live=asBoss()&&activeNow(k.id,d),mine=!!TM&&TM.task===k.id&&TM.d===d;
   const steps=k.steps||[],sd=steps.map((_,i)=>subOn(k.id,d,i));
   return `<div class="card task ${on?'done':''} ${mine?'run':''}">
   <div class="chk ${on?'on':''} ${late?'late':''}">${on?'✓':''}</div>
@@ -397,25 +400,25 @@ function taskRow(k,d){
   ${ns.map(n=>`<div class="note ${n.by==='boss'?'b':''}">${n.by==='boss'?'<b>Supervisor:</b> ':''}${esc(n.text)}</div>`).join('')}
   ${can&&!on&&!mine?`<button class="pri go" onclick="tmChoose('${k.id}')">${PLAY} Iniciar</button>`:''}
   </div>
-  <button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${boss()?'Comentar':'Nota'}</button></div>`;
+  <button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${asBoss()?'Comentar':'Nota'}</button></div>`;
 }
 function weeklySec(d){const w=weeklyOn(d);if(!w.length)return '';w.sort((a,b)=>(wkCount(a,d)>=(a.times||1))-(wkCount(b,d)>=(b.times||1)));return `<h2>Esta semana</h2>`+w.map(k=>taskRow(k,d)).join('')}
 function whoBar(){
   if(!boss()||!S.members||S.members.length<2)return '';
-  return `<label>Usuario</label><div class="pills" style="margin-top:2px">${S.members.map(m=>`<button class="${m.id===curWho()?'on':''}" onclick="setWho('${m.id}')">${esc(m.name)}</button>`).join('')}</div>`;
+  return `<label>Usuario</label><div class="pills" style="margin-top:2px">${S.members.map(m=>`<button class="${m.id===curWho()?'on':''}" onclick="setWho('${m.id}')">${esc(m.name)}${S.cfg.self===m.id?' · tú':''}</button>`).join('')}</div>`;
 }
 function getMsg(){const w=curWho();return (S.cfg.msgs&&S.cfg.msgs[w])||(w==='main'?S.cfg.msg:null)||null}
 function viewHoy(){
   const d=S.day,ts=tasksOn(d),st=dayStat(d),t=today(),blocks=S.cfg.blocks||[],foc=focusOn(d),sk=streak();
   const groups=[...blocks.map(b=>({n:b.name,l:ts.filter(k=>k.block===b.id)})),{n:blocks.length?'Otras tareas':'',l:ts.filter(k=>!blocks.some(b=>b.id===k.block))}].filter(g=>g.l.length);
   groups.forEach(g=>g.l.sort((a,b)=>(!!status(a.id,d))-(!!status(b.id,d))));
-  return `<div class="head"><div><h1>${boss()?esc(whoName()):'Hola, '+esc(S.name)}</h1><div class="mute">${d===t?'Hoy · ':''}${longD(d)}</div></div>
+  return `<div class="head"><div><h1>${asBoss()?esc(whoName()):'Hola, '+esc(whoName())}</h1><div class="mute">${d===t?'Hoy · ':''}${longD(d)}</div></div>
   <div class="row"><button onclick="S.day=addD(S.day,-1);render()">‹</button><button onclick="S.day=today();render()" ${d===t?'disabled':''}>Hoy</button><button onclick="S.day=addD(S.day,1);render()" ${d>=t?'disabled':''}>›</button></div></div>
   ${whoBar()}
   <div class="quote"><small>Frase del día</small><p>${esc(quoteOf(d))}</p></div>
   ${(()=>{const m=getMsg();return m&&m.text&&m.date===d?`<div class="card msg"><b>Mensaje${boss()?'':' de tu supervisor'}</b><div>${esc(m.text)}</div></div>`:''})()}
   <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${foc?` · Enfoque ${fmtMin(foc)}`:''}${sk?` · Racha ${sk} ${sk===1?'día':'días'}`:''}${(()=>{const w=weeklyOn(d);if(!w.length)return '';return ` · Semanales ${w.reduce((a,k)=>a+Math.min(wkCount(k,d),k.times||1),0)}/${w.reduce((a,k)=>a+(k.times||1),0)}`})()}</div></div></div></div>
-  ${boss()?`<button style="width:100%;margin-bottom:6px" onclick="msgModal()">Dejar un mensaje para ella</button>`:''}
+  ${asBoss()?`<button style="width:100%;margin-bottom:6px" onclick="msgModal()">Dejar un mensaje para ${esc(whoName())}</button>`:''}
   ${groups.map(g=>`${g.n?`<h2>${esc(g.n)}</h2>`:'<h2>Tareas</h2>'}${g.l.map(k=>taskRow(k,d)).join('')}`).join('')}
   ${weeklySec(d)}
   ${!ts.length&&!weeklyOn(d).length?`<div class="card mute center">${boss()?'Aún no hay tareas para este día. Créalas en la pestaña Tareas.':'No tienes tareas para este día.'}</div>`:''}
@@ -555,9 +558,9 @@ function saveTask(){
 function delTask(){if(!confirm('¿Eliminar esta tarea? El historial se mantiene.'))return;const k=S.cfg.tasks.find(x=>x.id===TF.id);if(k)k.arch=today();closeModal();saveCfg()}
 function noteModal(id,d){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  modal(`<h3>${boss()?'Comentario para ella':'Nota'}</h3><p class="mute">${esc(k.title)}</p><textarea id="nt" rows="3" placeholder="${boss()?'Ej: Falta adjuntar el archivo':'Ej: Queda esperando respuesta del cliente'}"></textarea><button class="pri" style="width:100%" onclick="saveNote('${id}','${d}')">Enviar</button>`);
+  modal(`<h3>${asBoss()?'Comentario para ella':'Nota'}</h3><p class="mute">${esc(k.title)}</p><textarea id="nt" rows="3" placeholder="${asBoss()?'Ej: Falta adjuntar el archivo':'Ej: Queda esperando respuesta del cliente'}"></textarea><button class="pri" style="width:100%" onclick="saveNote('${id}','${d}')">Enviar</button>`);
 }
-function saveNote(id,d){const v=$('#nt').value.trim();if(!v)return;closeModal();send({type:boss()?'comment':'note',task:id,d,text:v})}
+function saveNote(id,d){const v=$('#nt').value.trim();if(!v)return;closeModal();send({type:asBoss()?'comment':'note',task:id,d,text:v})}
 function msgModal(){const m=getMsg()||{};
   modal(`<h3>Mensaje para ${esc(whoName())}</h3><p class="mute">Lo verá arriba en "Hoy" durante ese día.</p><textarea id="mg" rows="3" placeholder="Ej: Hoy la prioridad es el reporte mensual">${esc(m.text||'')}</textarea><label>Para</label><div class="pills"><button id="m0" class="on" onclick="this.classList.add('on');$('#m1').classList.remove('on')">Hoy</button><button id="m1" onclick="this.classList.add('on');$('#m0').classList.remove('on')">Mañana</button></div><button class="pri" style="width:100%" onclick="saveMsg()">Publicar</button>${m.text?`<p class="center"><button class="ghost danger" onclick="clearMsg()">Quitar mensaje</button></p>`:''}`)}
 function saveMsg(){const t=$('#mg').value.trim();if(!t)return;const d=$('#m1').classList.contains('on')?addD(today(),1):today(),w=curWho();S.cfg.msgs=S.cfg.msgs||{};S.cfg.msgs[w]={text:t,date:d};if(w==='main')S.cfg.msg=null;closeModal();saveCfg();toast('Mensaje publicado')}
@@ -670,7 +673,7 @@ function viewAjustes(){
 function teamCard(){
   if(!boss())return '';
   const ms=S.members||[{id:'main',name:S.name}];
-  return `<div class="card"><label>Equipo</label>${ms.map(m=>`<div class="row" style="margin:10px 0 2px"><div class="sp"><div class="tt">${esc(m.name)}</div></div><button class="ghost" onclick="memberModal('${m.id}')">Editar</button></div>`).join('')}
+  return `<div class="card"><label>Equipo</label>${ms.map(m=>`<div class="row" style="margin:10px 0 2px"><div class="sp"><div class="tt">${esc(m.name)}${S.cfg.self===m.id?' <span class="chip">Tú</span>':''}</div></div><button class="ghost" onclick="memberModal('${m.id}')">Editar</button></div>`).join('')}
   ${S.multi?`<button class="pri" style="width:100%;margin-top:10px" onclick="addMemberModal()">+ Agregar usuario</button>`:`<p class="mute" style="margin:10px 0 0">Para agregar más usuarios hay que actualizar el servidor (un paso único).</p>`}</div>`;
 }
 function addMemberModal(){modal(`<h3>Agregar usuario</h3><p class="mute">Cada usuario entra con el código del equipo y su propio PIN, y ve solo sus tareas.</p><label>Nombre</label><input id="mn" placeholder="Nombre"><label>PIN (4+ caracteres, distinto a los demás)</label><input id="mp" type="password" inputmode="numeric"><button class="pri" style="width:100%" onclick="addMember()">Agregar</button>`)}
@@ -680,7 +683,8 @@ async function addMember(){
   catch(e){toast(e.message)}
 }
 function memberModal(id){const m=(S.members||[]).find(x=>x.id===id)||{name:S.name};
-  modal(`<h3>${esc(m.name)}</h3><button style="width:100%;margin-bottom:8px" onclick="memberAct('${id}','name')">Cambiar nombre</button><button style="width:100%;margin-bottom:8px" onclick="memberAct('${id}','pin')">Cambiar PIN</button>${id==='main'?'':`<p class="center"><button class="ghost danger" onclick="memberDel('${id}')">Quitar del equipo</button></p>`}`)}
+  modal(`<h3>${esc(m.name)}</h3><button style="width:100%;margin-bottom:8px" onclick="memberAct('${id}','name')">Cambiar nombre</button><button style="width:100%;margin-bottom:8px" onclick="memberAct('${id}','pin')">Cambiar PIN</button><button style="width:100%;margin-bottom:8px" onclick="setSelf('${id}')">${S.cfg.self===id?'Dejar de marcarlo como “soy yo”':'Este soy yo (trabajo con este usuario)'}</button>${id==='main'?'':`<p class="center"><button class="ghost danger" onclick="memberDel('${id}')">Quitar del equipo</button></p>`}`)}
+function setSelf(id){S.cfg.self=S.cfg.self===id?null:id;closeModal();saveCfg();toast(S.cfg.self?'Listo: ahora puedes trabajar como '+((S.members||[]).find(m=>m.id===id)||{}).name:'Quitado')}
 function memberAct(id,what){const pin=what==='pin';modal(`<h3>${pin?'Nuevo PIN':'Nuevo nombre'}</h3><input id="mv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="memberSave('${id}','${what}')">Guardar</button>`)}
 async function memberSave(id,what){
   const v=$('#mv').value.trim();
