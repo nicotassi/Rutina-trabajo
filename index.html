@@ -94,6 +94,8 @@ button[disabled]{opacity:.45;cursor:default}
 .tbar .tbt{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
 .tbar button{background:rgba(255,255,255,.16);border:0;color:inherit}
 .tbar button.pri{background:#fff;color:#0f172a}
+.wks{display:flex;gap:6px;margin-top:10px}.wk{flex:1;text-align:center;padding:7px 0;border-radius:8px;font-size:12.5px;font-weight:600;background:var(--bd);color:var(--mu)}
+.wk.ok{background:var(--pri);color:#fff}[data-theme=dark] .wk.ok{color:#04201d}.wk.bad{background:color-mix(in srgb,var(--bad) 16%,var(--card));color:var(--bad)}.wk.cur{background:var(--pri2);color:var(--pri)}.wk.na{opacity:.35}
 .trow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 </style>
 </head>
@@ -146,6 +148,7 @@ function doneAny(id){const m={};for(const e of S.ev)if(e.task===id&&(e.type==='d
 function tasksOn(d){
   const t=today();
   return S.cfg.tasks.filter(k=>{
+    if(k.kind==='semanal')return false;
     if(k.arch&&d>=k.arch)return false;
     if(d<(k.from||'0000'))return false;
     if(k.kind==='puntual')return d===k.date||(d===t&&k.date<t&&!doneAny(k.id));
@@ -154,6 +157,11 @@ function tasksOn(d){
 }
 function isLate(k,d){if(status(k.id,d))return false;const t=today();if(d<t)return true;if(d===t&&k.time&&nowHM()>k.time)return true;return k.kind==='puntual'&&k.date<d}
 function dayStat(d){const r=tasksOn(d),n=r.filter(k=>status(k.id,d)).length;return{n,total:r.length,pct:r.length?Math.round(n/r.length*100):null}}
+const wkStart=d=>addD(d,-((dow(d)+6)%7));
+const wkDates=d=>{const s=wkStart(d);return [0,1,2,3,4,5,6].map(i=>addD(s,i))};
+function weeklyOn(d){const e=addD(wkStart(d),6);return S.cfg.tasks.filter(k=>k.kind==='semanal'&&e>=(k.from||'0000')&&!(k.arch&&e>=k.arch))}
+const wkCount=(k,d)=>{const w=wkDates(d);return S.ev.filter(e=>e.type==='done'&&e.task===k.id&&w.includes(e.d)).length};
+const wkTime=(k,d)=>wkDates(d).reduce((a,x)=>a+timeOn(k.id,x),0);
 function streak(){let s=0,d=today();const st=dayStat(d);if(st.total&&st.n<st.total)d=addD(d,-1);
   for(let i=0;i<120;i++){const x=dayStat(d);if(!x.total){d=addD(d,-1);continue}if(x.n===x.total){s++;d=addD(d,-1)}else break}return s}
 function bestStreak(){let b=0,c=0;for(let i=119;i>=0;i--){const d=addD(today(),-i),x=dayStat(d);if(!x.total)continue;if(x.n===x.total){c++;b=Math.max(b,c)}else if(d<today())c=0}return b}
@@ -296,20 +304,22 @@ function createForm(){return `<h3>Crear equipo</h3><label>Nombre de tu compañer
 <label>PIN de ella (distinto al tuyo)</label><input id="cs" type="password" inputmode="numeric"><button class="pri" style="width:100%" onclick="create()">Crear</button>`}
 
 function taskRow(k,d){
-  const on=status(k.id,d),late=isLate(k,d),ns=notesFor(k.id,d),can=!boss()&&d===today();
-  const tsec=timeOn(k.id,d),live=boss()&&activeNow(k.id,d),mine=!!TM&&TM.task===k.id&&TM.d===d;
+  const wkly=k.kind==='semanal',tg=k.times||1,wc=wkly?wkCount(k,d):0;
+  const on=wkly?(wc>=tg?(status(k.id,d)||{tm:''}):null):status(k.id,d),late=wkly?false:isLate(k,d),ns=notesFor(k.id,d),can=!boss()&&d===today();
+  const tsec=wkly?wkTime(k,d):timeOn(k.id,d),live=boss()&&activeNow(k.id,d),mine=!!TM&&TM.task===k.id&&TM.d===d;
   const steps=k.steps||[],sd=steps.map((_,i)=>subOn(k.id,d,i));
   return `<div class="card task ${on?'done':''} ${mine?'run':''}">
   <div class="chk ${on?'on':''} ${late?'late':''}">${on?'✓':''}</div>
   <div class="sp"><div class="tt">${esc(k.title)}</div>
   ${k.desc?`<div class="mute">${esc(k.desc)}</div>`:''}
   ${steps.length?`<div style="margin-top:6px">${steps.map((t,i)=>`<label class="step ${sd[i]?'on':''}"><input type="checkbox" ${sd[i]?'checked':''} ${can&&!on?'':'disabled'} onchange="toggleSub('${k.id}',${i})"> ${esc(t)}</label>`).join('')}</div>`:''}
-  <div>${k.time?`<span class="chip ${late?'bad':''}">Hasta ${k.time}</span>`:''}${k.essential?'<span class="chip warn">Prioritaria</span>':''}${k.kind==='puntual'&&k.date<d?'<span class="chip bad">Arrastrada</span>':''}${on&&on.tm?`<span class="chip">Terminada ${on.tm}</span>`:''}${tsec>0?`<span class="chip">Tiempo ${fmtMin(tsec)}</span>`:''}${late&&!on?'<span class="chip bad">Atrasada</span>':''}${live?'<span class="chip warn">Trabajando ahora</span>':''}${mine?'<span class="chip warn">En curso</span>':''}</div>
+  <div>${wkly?`<span class="chip">${wc}/${tg} esta semana</span>`:''}${wkly&&!on&&status(k.id,d)?'<span class="chip">Hecha hoy</span>':''}${k.time?`<span class="chip ${late?'bad':''}">Hasta ${k.time}</span>`:''}${k.essential?'<span class="chip warn">Prioritaria</span>':''}${k.kind==='puntual'&&k.date<d?'<span class="chip bad">Arrastrada</span>':''}${on&&on.tm?`<span class="chip">Terminada ${on.tm}</span>`:''}${tsec>0?`<span class="chip">Tiempo ${fmtMin(tsec)}</span>`:''}${late&&!on?'<span class="chip bad">Atrasada</span>':''}${live?'<span class="chip warn">Trabajando ahora</span>':''}${mine?'<span class="chip warn">En curso</span>':''}</div>
   ${ns.map(n=>`<div class="note ${n.by==='boss'?'b':''}">${n.by==='boss'?'<b>Supervisor:</b> ':''}${esc(n.text)}</div>`).join('')}
   ${can&&!on&&!mine?`<button class="pri go" onclick="tmChoose('${k.id}')">${PLAY} Iniciar</button>`:''}
   </div>
   <button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${boss()?'Comentar':'Nota'}</button></div>`;
 }
+function weeklySec(d){const w=weeklyOn(d);if(!w.length)return '';w.sort((a,b)=>(wkCount(a,d)>=(a.times||1))-(wkCount(b,d)>=(b.times||1)));return `<h2>Esta semana</h2>`+w.map(k=>taskRow(k,d)).join('')}
 function viewHoy(){
   const d=S.day,ts=tasksOn(d),st=dayStat(d),t=today(),blocks=S.cfg.blocks||[],foc=focusOn(d),sk=streak();
   const groups=[...blocks.map(b=>({n:b.name,l:ts.filter(k=>k.block===b.id)})),{n:blocks.length?'Otras tareas':'',l:ts.filter(k=>!blocks.some(b=>b.id===k.block))}].filter(g=>g.l.length);
@@ -318,10 +328,11 @@ function viewHoy(){
   <div class="row"><button onclick="S.day=addD(S.day,-1);render()">‹</button><button onclick="S.day=today();render()" ${d===t?'disabled':''}>Hoy</button><button onclick="S.day=addD(S.day,1);render()" ${d>=t?'disabled':''}>›</button></div></div>
   <div class="quote"><small>Frase del día</small><p>${esc(quoteOf(d))}</p></div>
   ${S.cfg.msg&&S.cfg.msg.text&&S.cfg.msg.date===d?`<div class="card msg"><b>Mensaje${boss()?'':' de tu supervisor'}</b><div>${esc(S.cfg.msg.text)}</div></div>`:''}
-  <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${foc?` · Enfoque ${fmtMin(foc)}`:''}${sk?` · Racha ${sk} ${sk===1?'día':'días'}`:''}</div></div></div></div>
+  <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${foc?` · Enfoque ${fmtMin(foc)}`:''}${sk?` · Racha ${sk} ${sk===1?'día':'días'}`:''}${(()=>{const w=weeklyOn(d);if(!w.length)return '';return ` · Semanales ${w.reduce((a,k)=>a+Math.min(wkCount(k,d),k.times||1),0)}/${w.reduce((a,k)=>a+(k.times||1),0)}`})()}</div></div></div></div>
   ${boss()?`<button style="width:100%;margin-bottom:6px" onclick="msgModal()">Dejar un mensaje para ella</button>`:''}
   ${groups.map(g=>`${g.n?`<h2>${esc(g.n)}</h2>`:'<h2>Tareas</h2>'}${g.l.map(k=>taskRow(k,d)).join('')}`).join('')}
-  ${!ts.length?`<div class="card mute center">${boss()?'Aún no hay tareas para este día. Créalas en la pestaña Tareas.':'No tienes tareas para este día.'}</div>`:''}
+  ${weeklySec(d)}
+  ${!ts.length&&!weeklyOn(d).length?`<div class="card mute center">${boss()?'Aún no hay tareas para este día. Créalas en la pestaña Tareas.':'No tienes tareas para este día.'}</div>`:''}
   ${st.total&&st.n===st.total?'<div class="card center"><b>Día completo.</b> Todas las tareas terminadas.</div>':''}`;
 }
 function heat(){
@@ -342,6 +353,11 @@ function timeCard(){
   const mx=rows[0][1].sec;
   return `<h2>Tiempo dedicado</h2>${tiles}`+rows.map(([id,o])=>{const k=S.cfg.tasks.find(x=>x.id===id),b=k&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card"><div class="trow"><div class="tt">${esc(k?k.title:'Tarea eliminada')}</div><b>${fmtMin(o.sec)}</b></div><div class="bar" style="margin:8px 0 6px"><i style="width:${Math.round(o.sec/mx*100)}%"></i></div><div class="mute">${b?esc(b.name)+' · ':''}Promedio ${fmtMin(o.sec/o.n)} por vez · ${o.n} ${o.n===1?'vez':'veces'}</div></div>`}).join('');
 }
+function weeklyCard(){
+  const t=today(),ws=[3,2,1,0].map(i=>addD(wkStart(t),-7*i)),tasks=S.cfg.tasks.filter(k=>k.kind==='semanal'&&!k.arch);
+  if(!tasks.length)return '';
+  return `<h2>Tareas semanales</h2>`+tasks.map(k=>`<div class="card"><div class="trow"><div class="tt">${esc(k.title)}</div><span class="mute">${k.times||1} ${(k.times||1)===1?'vez':'veces'} por semana</span></div><div class="wks">${ws.map(w=>{if(addD(w,6)<(k.from||'0000'))return '<span class="wk na">–</span>';const c=wkCount(k,w),g=k.times||1;return `<span class="wk ${c>=g?'ok':(w===wkStart(t)?'cur':'bad')}">${c}/${g}</span>`}).join('')}</div></div>`).join('')+`<div class="mute" style="margin:-2px 2px 4px">Últimas 4 semanas; la última es la actual.</div>`;
+}
 function viewStats(){
   const t=today(),w=range(7),m=range(30),sk=streak(),bs=bestStreak();
   const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])})}
@@ -349,11 +365,12 @@ function viewStats(){
   <div class="tiles"><div class="card"><div class="big">${w??'—'}${w!=null?'%':''}</div><div class="mute">Cumplimiento 7 días</div></div><div class="card"><div class="big">${m??'—'}${m!=null?'%':''}</div><div class="mute">Cumplimiento 30 días</div></div>
   <div class="card"><div class="big">${sk}</div><div class="mute">Racha actual (días)</div></div><div class="card"><div class="big">${bs}</div><div class="mute">Mejor racha (días)</div></div></div>
   ${heat()}
+  ${weeklyCard()}
   ${timeCard()}
   <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente</div>'}`;
 }
 // ----- tareas y bloques (supervisor) -----
-function taskLine(k){return `<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div><span class="mute">›</span></div>`}
+function taskLine(k){return `<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div><span class="mute">›</span></div>`}
 function viewTareas(){
   const ts=S.cfg.tasks.filter(k=>!k.arch),bl=S.cfg.blocks||[];
   const loose=ts.filter(k=>!bl.some(b=>b.id===k.block));
@@ -369,10 +386,10 @@ function saveBlock(id){const n=$('#bn').value.trim();if(!n)return toast('Ponle u
 function delBlock(id){if(!confirm('¿Eliminar este bloque?'))return;S.cfg.blocks=S.cfg.blocks.filter(x=>x.id!==id);S.cfg.tasks.forEach(k=>{if(k.block===id)k.block=''});closeModal();saveCfg()}
 function taskModal(id){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  TF=k?{...k,days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:''};
+  TF=k?{...k,days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1};
   drawTask();
 }
-function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm').value;TF.essential=g('te').checked;TF.block=g('tb').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
+function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm')?g('tm').value:'';if(g('tw'))TF.times=+g('tw').value;TF.essential=g('te').checked;TF.block=g('tb').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
 function drawTask(){
   const bl=S.cfg.blocks||[];
   modal(`<h3>${TF.id?'Editar tarea':'Nueva tarea'}</h3>
@@ -380,9 +397,9 @@ function drawTask(){
   <label>Detalle (opcional)</label><input id="td" value="${esc(TF.desc)}">
   <label>Bloque</label><select id="tb"><option value="">Sin bloque</option>${bl.map(b=>`<option value="${b.id}" ${TF.block===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
   <label>Subtareas (opcional, una por línea)</label><textarea id="ts" rows="3" placeholder="Ej: Revisar la bandeja de entrada">${esc((TF.steps||[]).join('\n'))}</textarea>
-  <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button></div>
-  ${TF.kind==='fija'?`<label>Días</label><div class="pills">${[1,2,3,4,5,6,0].map(x=>`<button class="${TF.days.includes(x)?'on':''}" onclick="syncTF();TF.days=TF.days.includes(${x})?TF.days.filter(y=>y!==${x}):[...TF.days,${x}];drawTask()">${DN[x]}</button>`).join('')}</div>`:`<label>Fecha</label><input id="tdate" type="date" value="${TF.date}">`}
-  <label>Hora límite (opcional)</label><input id="tm" type="time" value="${TF.time||''}">
+  <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button><button class="${TF.kind==='semanal'?'on':''}" onclick="syncTF();TF.kind='semanal';drawTask()">Semanal</button></div>
+  ${TF.kind==='fija'?`<label>Días</label><div class="pills">${[1,2,3,4,5,6,0].map(x=>`<button class="${TF.days.includes(x)?'on':''}" onclick="syncTF();TF.days=TF.days.includes(${x})?TF.days.filter(y=>y!==${x}):[...TF.days,${x}];drawTask()">${DN[x]}</button>`).join('')}</div>`:TF.kind==='semanal'?`<label>Veces por semana</label><select id="tw">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${(TF.times||1)===n?'selected':''}>${n}</option>`).join('')}</select><p class="mute" style="margin:-6px 0 12px">Se hace en cualquier día de la semana (lun-dom). Ella la ve toda la semana hasta completarla.</p>`:`<label>Fecha</label><input id="tdate" type="date" value="${TF.date}">`}
+  ${TF.kind==='semanal'?'':`<label>Hora límite (opcional)</label><input id="tm" type="time" value="${TF.time||''}">`}
   <label class="row" style="color:var(--tx);text-transform:none;font-size:14.5px;letter-spacing:0"><input id="te" type="checkbox" style="width:auto;margin:0" ${TF.essential?'checked':''}> Prioritaria</label><p></p>
   <button class="pri" style="width:100%" onclick="saveTask()">Guardar</button>
   ${TF.id?`<p class="center"><button class="ghost danger" onclick="delTask()">Eliminar tarea</button></p>`:''}`);
@@ -390,7 +407,7 @@ function drawTask(){
 function saveTask(){
   syncTF();if(!TF.title.trim())return toast('Ponle un nombre');
   if(TF.kind==='fija'&&!TF.days.length)return toast('Elige al menos un día');
-  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.time||'',essential:TF.essential,steps:TF.steps||[],block:TF.block||'',from:TF.from||today()};
+  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.kind==='semanal'?'':(TF.time||''),times:TF.kind==='semanal'?(TF.times||1):null,essential:TF.essential,steps:TF.steps||[],block:TF.block||'',from:TF.from||today()};
   const i=S.cfg.tasks.findIndex(x=>x.id===o.id);if(i>=0)S.cfg.tasks[i]=o;else S.cfg.tasks.push(o);
   closeModal();saveCfg();
 }
