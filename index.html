@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Jornada</title>
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Jornada">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="icon-180.png">
+<style>
+:root{--bg:#f3f6f6;--card:#fff;--tx:#12262b;--mu:#64797e;--bd:#dde6e7;--pri:#0f766e;--pri2:#e2f3f1;--ok:#16a34a;--bad:#dc2626;--warn:#d97706;--sh:0 2px 12px rgba(15,60,60,.07)}
+[data-theme=dark]{--bg:#0d1517;--card:#162225;--tx:#e8f1f2;--mu:#8ba2a6;--bd:#26383b;--pri:#2dd4bf;--pri2:#12332f;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24;--sh:none}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:84px}
+.wrap{max-width:560px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:0}h2{font-size:17px;margin:20px 0 8px}h3{margin:0 0 8px}
+.mute{color:var(--mu);font-size:14px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px;box-shadow:var(--sh);margin-bottom:10px}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:12px;background:var(--card);margin:4px 0 10px}
+label{font-size:13px;color:var(--mu);font-weight:600}
+button{border:1px solid var(--bd);background:var(--card);border-radius:12px;padding:10px 14px;cursor:pointer}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
+[data-theme=dark] button.pri{color:#06201c}
+button.ghost{background:none;border:0;color:var(--pri);padding:6px 8px}
+button.danger{color:var(--bad)}
+.row{display:flex;align-items:center;gap:10px}.sp{flex:1}
+.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.nav{position:fixed;bottom:0;left:0;right:0;background:var(--card);border-top:1px solid var(--bd);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+.nav button{flex:1;border:0;background:none;font-size:12px;color:var(--mu);padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.nav button span{font-size:20px}.nav button.on{color:var(--pri);font-weight:700}
+.task{display:flex;gap:12px;align-items:flex-start}
+.chk{width:30px;height:30px;border-radius:50%;border:2px solid var(--bd);flex:none;display:grid;place-items:center;background:none;padding:0;font-size:16px;color:#fff;margin-top:1px}
+.chk.on{background:var(--ok);border-color:var(--ok)}.chk.late{border-color:var(--bad)}
+.chk[disabled]{opacity:.6;cursor:default}
+.tt{font-weight:600}.done .tt{text-decoration:line-through;color:var(--mu)}
+.chip{display:inline-block;font-size:12px;padding:2px 8px;border-radius:99px;background:var(--pri2);color:var(--pri);margin:2px 4px 0 0;font-weight:600}
+.chip.bad{background:rgba(220,38,38,.12);color:var(--bad)}.chip.warn{background:rgba(217,119,6,.14);color:var(--warn)}
+.bar{height:10px;border-radius:9px;background:var(--bd);overflow:hidden}.bar i{display:block;height:100%;background:var(--pri);border-radius:9px;transition:width .3s}
+.big{font-size:34px;font-weight:800;line-height:1}
+.note{font-size:14px;background:var(--bg);border-radius:10px;padding:6px 10px;margin-top:6px}
+.note.b{border-left:3px solid var(--pri)}
+.days{display:flex;gap:4px;align-items:flex-end;height:90px}
+.days div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--mu);cursor:pointer}
+.days b{display:block;width:100%;border-radius:5px 5px 2px 2px;background:var(--pri);min-height:3px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:20}
+.modal>div{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
+.pills{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 10px}
+.pills button{padding:7px 12px;border-radius:99px}.pills button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
+.toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;z-index:30;font-size:14px}
+.login{min-height:100vh;display:flex;align-items:center}.login .card{width:100%;padding:22px}
+.logo{width:64px;height:64px;border-radius:16px;margin:0 auto 10px;display:block}
+.center{text-align:center}
+.code{font:800 30px/1 ui-monospace,monospace;letter-spacing:4px;color:var(--pri);margin:10px 0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+const SB='https://ymfnnoksuccktjakymnb.supabase.co';
+const KEY='sb_publishable_zqG5YidGNfYQGTCfi3-yxg_p1gls28j';
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ls={get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+const today=()=>fmt(new Date());
+const dt=s=>new Date(s+'T12:00:00');
+const addD=(s,n)=>{const d=dt(s);d.setDate(d.getDate()+n);return fmt(d)};
+const dow=s=>dt(s).getDay();
+const DN=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const longD=s=>dt(s).toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'});
+const nowHM=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+
+async function rpc(fn,args){
+  const r=await fetch(`${SB}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
+  const j=await r.json().catch(()=>null);
+  if(!r.ok)throw new Error((j&&j.message)||'Error de conexión');
+  return j;
+}
+let S={code:null,pin:null,role:null,name:'',cfg:{tasks:[]},ev:[],tab:'hoy',day:today(),loading:false};
+const boss=()=>S.role==='boss';
+function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;S.cfg=Object.assign({tasks:[]},r.config||{});S.cfg.tasks=S.cfg.tasks||[];S.ev=r.events||[];ls.set('jr_cache',r)}
+async function refresh(){if(!S.code)return;try{apply(await rpc('jr_login',{p_code:S.code,p_pin:S.pin}));return true}catch(e){return false}}
+async function login(code,pin){
+  try{const r=await rpc('jr_login',{p_code:code,p_pin:pin});S.pin=pin;apply(r);ls.set('jr_auth',{code:r.code,pin});S.tab='hoy';S.day=today();render()}
+  catch(e){toast('⚠️ '+e.message)}
+}
+async function create(){
+  const n=$('#cn').value.trim(),bp=$('#cb').value.trim(),sp=$('#cs').value.trim();
+  if(!n)return toast('Pon el nombre de tu compañera');
+  try{const code=await rpc('jr_create',{p_name:n,p_boss_pin:bp,p_staff_pin:sp});
+    await login(code,bp);
+    modal(`<div class="center"><h3>¡Equipo creado!</h3><p class="mute">Este es el código del equipo. Ella entra con el código y su PIN; tú con el código y el tuyo.</p><div class="code">${code}</div><button class="pri" style="width:100%" onclick="closeModal()">Empezar</button></div>`)
+  }catch(e){toast('⚠️ '+e.message)}
+}
+function logout(){ls.set('jr_auth',null);ls.set('jr_cache',null);S={code:null,pin:null,role:null,name:'',cfg:{tasks:[]},ev:[],tab:'hoy',day:today()};render()}
+
+// ---- lógica de tareas ----
+function status(id,d){let s=null;for(const e of S.ev)if(e.task===id&&e.d===d&&(e.type==='done'||e.type==='undone'))s=e;return s&&s.type==='done'?s:null}
+function doneAny(id){const m={};for(const e of S.ev)if(e.task===id&&(e.type==='done'||e.type==='undone'))m[e.d]=e.type;return Object.values(m).includes('done')}
+function tasksOn(d){
+  const t=today();
+  return S.cfg.tasks.filter(k=>{
+    if(k.arch&&d>=k.arch)return false;
+    if(d<(k.from||'0000'))return false;
+    if(k.kind==='puntual')return d===k.date||(d===t&&k.date<t&&!doneAny(k.id));
+    return (k.days||[]).includes(dow(d));
+  }).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
+}
+function isLate(k,d){if(status(k.id,d))return false;const t=today();if(d<t)return true;if(d===t&&k.time&&nowHM()>k.time)return true;return k.kind==='puntual'&&k.date<d}
+function dayStat(d){const r=tasksOn(d),n=r.filter(k=>status(k.id,d)).length;return{n,total:r.length,pct:r.length?Math.round(n/r.length*100):null}}
+function streak(){let s=0,d=today();const st=dayStat(d);if(st.total&&st.n<st.total)d=addD(d,-1);
+  for(let i=0;i<120;i++){const x=dayStat(d);if(!x.total){d=addD(d,-1);continue}if(x.n===x.total){s++;d=addD(d,-1)}else break}return s}
+function range(n){let a=0,b=0;for(let i=0;i<n;i++){const x=dayStat(addD(today(),-i));a+=x.n;b+=x.total}return b?Math.round(a/b*100):null}
+const notesFor=(id,d)=>S.ev.filter(e=>e.task===id&&e.d===d&&(e.type==='note'||e.type==='comment'));
+
+async function send(e){
+  S.ev.push({...e,by:S.role,id:Date.now()});render();
+  try{await rpc('jr_event',{p_code:S.code,p_pin:S.pin,p_ev:e});await refresh()}catch(x){toast('⚠️ '+x.message)}render();
+}
+function toggle(id){
+  const d=S.day;if(d!==today()||boss())return;
+  const on=!!status(id,d);
+  send({type:on?'undone':'done',task:id,d,tm:nowHM()});
+  if(!on)toast('✅ ¡Hecho!');
+}
+async function saveCfg(){render();try{await rpc('jr_save_cfg',{p_code:S.code,p_pin:S.pin,p_cfg:S.cfg});await refresh()}catch(x){toast('⚠️ '+x.message)}render()}
+
+// ---- UI helpers ----
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
+function modal(h){closeModal();const m=document.createElement('div');m.className='modal';m.innerHTML=`<div>${h}</div>`;m.onclick=e=>{if(e.target===m)closeModal()};document.body.appendChild(m)}
+function closeModal(){document.querySelectorAll('.modal').forEach(m=>m.remove())}
+function applyTheme(){const v=ls.get('jr_theme','auto');document.documentElement.dataset.theme=(v==='dark'||(v==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches))?'dark':'light'}
+function setTheme(v){ls.set('jr_theme',v);applyTheme();render()}
+
+// ---- vistas ----
+function viewLogin(){
+  return `<div class="wrap login"><div class="card center">
+  <img class="logo" src="icon.svg" alt=""><h1>Jornada</h1><p class="mute">Tareas diarias, claras y a la vista.</p>
+  <div style="text-align:left"><label>Código del equipo</label><input id="lc" placeholder="ABC123" autocapitalize="characters" value="${esc(ls.get('jr_lastcode',''))}">
+  <label>PIN</label><input id="lp" type="password" inputmode="numeric" placeholder="••••"></div>
+  <button class="pri" style="width:100%" onclick="ls.set('jr_lastcode',$('#lc').value.trim().toUpperCase());login($('#lc').value.trim(),$('#lp').value.trim())">Entrar</button>
+  <p><button class="ghost" onclick="modal(createForm())">Crear un equipo nuevo</button></p></div></div>`;
+}
+function createForm(){return `<h3>Crear equipo</h3><label>Nombre de tu compañera</label><input id="cn" placeholder="Nombre">
+<label>Tu PIN (supervisor, 4+ caracteres)</label><input id="cb" type="password" inputmode="numeric">
+<label>PIN de ella (distinto al tuyo)</label><input id="cs" type="password" inputmode="numeric"><button class="pri" style="width:100%" onclick="create()">Crear</button>`}
+
+function taskRow(k,d){
+  const on=status(k.id,d),late=isLate(k,d),ns=notesFor(k.id,d),can=!boss()&&d===today();
+  return `<div class="card task ${on?'done':''}">
+  <button class="chk ${on?'on':''} ${late?'late':''}" ${can?'':'disabled'} onclick="toggle('${k.id}')">${on?'✓':''}</button>
+  <div class="sp"><div class="tt">${esc(k.title)}</div>
+  ${k.desc?`<div class="mute">${esc(k.desc)}</div>`:''}
+  <div>${k.time?`<span class="chip ${late?'bad':''}">🕒 ${k.time}</span>`:''}${k.essential?'<span class="chip warn">Prioritaria</span>':''}${k.kind==='puntual'&&k.date<d?'<span class="chip bad">Arrastrada</span>':''}${on&&on.tm?`<span class="chip">Hecha ${on.tm}</span>`:''}${late&&!on?'<span class="chip bad">Atrasada</span>':''}</div>
+  ${ns.map(n=>`<div class="note ${n.by==='boss'?'b':''}">${n.by==='boss'?'💬 Supervisor: ':'📝 '}${esc(n.text)}</div>`).join('')}
+  </div>
+  <button class="ghost" onclick="noteModal('${k.id}','${d}')">${boss()?'💬':'📝'}</button></div>`;
+}
+function viewHoy(){
+  const d=S.day,ts=tasksOn(d),st=dayStat(d),t=today();
+  const pend=ts.filter(k=>!status(k.id,d)),hechas=ts.filter(k=>status(k.id,d));
+  return `<div class="head"><div><h1>${boss()?esc(S.name):'Hola, '+esc(S.name)}</h1><div class="mute" style="text-transform:none">${d===t?'Hoy · ':''}${longD(d)}</div></div>
+  <div class="row"><button onclick="S.day=addD(S.day,-1);render()">‹</button><button onclick="S.day=today();render()" ${d===t?'disabled':''}>Hoy</button><button onclick="S.day=addD(S.day,1);render()" ${d>=t?'disabled':''}>›</button></div></div>
+  <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${streak()?` · 🔥 racha ${streak()}`:''}</div></div></div></div>
+  ${pend.length?`<h2>Pendientes</h2>${pend.map(k=>taskRow(k,d)).join('')}`:''}
+  ${hechas.length?`<h2>Hechas</h2>${hechas.map(k=>taskRow(k,d)).join('')}`:''}
+  ${st.total&&!pend.length?'<div class="card center">🎉 Todo listo por hoy</div>':''}`;
+}
+function viewHist(){
+  const t=today(),days=[];for(let i=13;i>=0;i--)days.push(addD(t,-i));
+  const w=range(7),m=range(30);
+  const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])})}
+  return `<div class="head"><h1>Historial</h1></div>
+  <div class="row"><div class="card sp center"><div class="big">${w??'—'}${w!=null?'%':''}</div><div class="mute">Últimos 7 días</div></div><div class="card sp center"><div class="big">${m??'—'}${m!=null?'%':''}</div><div class="mute">Últimos 30 días</div></div><div class="card sp center"><div class="big">${streak()}</div><div class="mute">Racha 🔥</div></div></div>
+  <div class="card"><h3>Últimos 14 días</h3><div class="days">${days.map(d=>{const x=dayStat(d);return `<div onclick="S.day='${d}';S.tab='hoy';render()"><b style="height:${x.pct??0}%;${x.pct==null?'background:var(--bd)':x.pct<60?'background:var(--bad)':x.pct<100?'background:var(--warn)':''}"></b>${DN[dow(d)][0]}</div>`}).join('')}</div><div class="mute" style="margin-top:6px">Toca una barra para ver ese día.</div></div>
+  <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute" style="text-transform:none">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente 👏</div>'}`;
+}
+let TF={};
+function viewTareas(){
+  const ts=S.cfg.tasks.filter(k=>!k.arch);
+  return `<div class="head"><h1>Tareas</h1><button class="pri" onclick="taskModal()">+ Nueva</button></div>
+  ${ts.length?ts.map(k=>`<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):'Puntual: '+k.date}${k.time?' · '+k.time:''}${k.essential?' · prioritaria':''}</div></div><span class="mute">›</span></div>`).join(''):'<div class="card mute center">Aún no hay tareas. Crea la primera.</div>'}`;
+}
+function taskModal(id){
+  const k=S.cfg.tasks.find(x=>x.id===id);
+  TF=k?{...k,days:[...(k.days||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false};
+  drawTask();
+}
+function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm').value;TF.essential=g('te').checked;if(g('tdate'))TF.date=g('tdate').value}
+function drawTask(){
+  modal(`<h3>${TF.id?'Editar tarea':'Nueva tarea'}</h3>
+  <label>Tarea</label><input id="tt" value="${esc(TF.title)}" placeholder="Ej: Revisar correos">
+  <label>Detalle (opcional)</label><input id="td" value="${esc(TF.desc)}">
+  <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button></div>
+  ${TF.kind==='fija'?`<label>Días</label><div class="pills">${[1,2,3,4,5,6,0].map(x=>`<button class="${TF.days.includes(x)?'on':''}" onclick="syncTF();TF.days=TF.days.includes(${x})?TF.days.filter(y=>y!==${x}):[...TF.days,${x}];drawTask()">${DN[x]}</button>`).join('')}</div>`:`<label>Fecha</label><input id="tdate" type="date" value="${TF.date}">`}
+  <label>Hora límite (opcional)</label><input id="tm" type="time" value="${TF.time||''}">
+  <label class="row" style="color:var(--tx)"><input id="te" type="checkbox" style="width:auto;margin:0" ${TF.essential?'checked':''}> Prioritaria</label><p></p>
+  <button class="pri" style="width:100%" onclick="saveTask()">Guardar</button>
+  ${TF.id?`<p class="center"><button class="ghost danger" onclick="delTask()">Eliminar tarea</button></p>`:''}`);
+}
+function saveTask(){
+  syncTF();if(!TF.title.trim())return toast('Ponle un nombre');
+  if(TF.kind==='fija'&&!TF.days.length)return toast('Elige al menos un día');
+  const o={id:TF.id||'t'+Date.now().toString(36),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.time||'',essential:TF.essential,from:TF.from||today()};
+  const i=S.cfg.tasks.findIndex(x=>x.id===o.id);if(i>=0)S.cfg.tasks[i]=o;else S.cfg.tasks.push(o);
+  closeModal();saveCfg();
+}
+function delTask(){if(!confirm('¿Eliminar esta tarea? El historial se mantiene.'))return;const k=S.cfg.tasks.find(x=>x.id===TF.id);if(k)k.arch=today();closeModal();saveCfg()}
+function noteModal(id,d){
+  const k=S.cfg.tasks.find(x=>x.id===id);
+  modal(`<h3>${boss()?'💬 Comentario para ella':'📝 Nota'}</h3><p class="mute">${esc(k.title)}</p><textarea id="nt" rows="3" placeholder="${boss()?'Ej: Falta adjuntar el archivo':'Ej: Queda esperando respuesta del cliente'}"></textarea><button class="pri" style="width:100%" onclick="saveNote('${id}','${d}')">Enviar</button>`);
+}
+function saveNote(id,d){const v=$('#nt').value.trim();if(!v)return;closeModal();send({type:boss()?'comment':'note',task:id,d,text:v})}
+function viewAjustes(){
+  const th=ls.get('jr_theme','auto');
+  return `<div class="head"><h1>Ajustes</h1></div>
+  <div class="card"><label>Código del equipo</label><div class="code" style="margin:4px 0">${esc(S.code)}</div></div>
+  <div class="card"><label>Tema</label><div class="pills">${[['auto','Auto'],['light','Claro'],['dark','Oscuro']].map(([v,n])=>`<button class="${th===v?'on':''}" onclick="setTheme('${v}')">${n}</button>`).join('')}</div></div>
+  ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
+  <button class="danger" style="width:100%" onclick="logout()">Cerrar sesión</button>`;
+}
+function setVal(w,label,pin){modal(`<h3>${label}</h3><input id="sv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="doSet('${w}')">Guardar</button>`)}
+async function doSet(w){const v=$('#sv').value.trim();try{await rpc('jr_set',{p_code:S.code,p_pin:S.pin,p_what:w,p_val:v});if(w==='boss'){S.pin=v;ls.set('jr_auth',{code:S.code,pin:v})}closeModal();await refresh();render();toast('Listo ✅')}catch(e){toast('⚠️ '+e.message)}}
+
+function render(){
+  applyTheme();const a=$('#app');
+  if(!S.code){a.innerHTML=viewLogin();return}
+  const tabs=boss()?[['hoy','📋','Hoy'],['hist','📈','Historial'],['tareas','✏️','Tareas'],['ajustes','⚙️','Ajustes']]:[['hoy','📋','Hoy'],['hist','📈','Progreso'],['ajustes','⚙️','Ajustes']];
+  if(!tabs.some(t=>t[0]===S.tab))S.tab='hoy';
+  const v={hoy:viewHoy,hist:viewHist,tareas:viewTareas,ajustes:viewAjustes}[S.tab]();
+  a.innerHTML=`<div class="wrap">${v}</div><div class="nav">${tabs.map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render()"><span>${i}</span>${n}</button>`).join('')}</div>`;
+}
+
+// ---- arranque ----
+(async()=>{
+  applyTheme();
+  const au=ls.get('jr_auth'),c=ls.get('jr_cache');
+  if(au&&c){S.pin=au.pin;apply(c);render();if(await refresh())render()}
+  else render();
+  setInterval(async()=>{if(S.code&&!document.querySelector('.modal')&&document.visibilityState==='visible'){if(await refresh())render()}},30000);
+  document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&S.code&&!document.querySelector('.modal')){if(await refresh())render()}});
+  if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
