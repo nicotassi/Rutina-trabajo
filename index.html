@@ -139,8 +139,17 @@ async function rpc(fn,args){
 }
 let S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],tab:'hoy',day:today()};
 const boss=()=>S.role==='boss';
-function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;S.cfg=Object.assign({tasks:[],blocks:[]},r.config||{});S.cfg.tasks=S.cfg.tasks||[];S.cfg.blocks=S.cfg.blocks||[];S.ev=r.events||[];ls.set('jr_cache',r)}
-async function refresh(){if(!S.code)return;try{apply(await rpc('jr_login',{p_code:S.code,p_pin:S.pin}));return true}catch(e){return false}}
+let OUT=ls.get('jr_outbox',[]),LASTSYNC=0,FL=false,AG=false,CREATING=false;
+function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;
+  let cf=r.config||{};if(r.role==='boss'&&ls.get('jr_dirty',false)){const l=ls.get('jr_cfg_local',null);if(l&&l.code===r.code)cf=l.cfg}
+  S.cfg=Object.assign({tasks:[],blocks:[]},cf);S.cfg.tasks=S.cfg.tasks||[];S.cfg.blocks=S.cfg.blocks||[];
+  S.ev=r.events||[];
+  const have=new Set(S.ev.map(e=>e.cid).filter(Boolean));
+  OUT=OUT.filter(o=>!(o.code===r.code&&have.has(o.ev.cid)));ls.set('jr_outbox',OUT);
+  S.ev=S.ev.concat(OUT.filter(o=>o.code===r.code).map(o=>({...o.ev,by:r.role,pending:true,id:'p'+o.ev.cid})));
+  ls.set('jr_cache',r)}
+const pendingN=()=>OUT.filter(o=>o.code===S.code).length+(ls.get('jr_dirty',false)?1:0);
+async function refresh(){if(!S.code)return;try{apply(await rpc('jr_login',{p_code:S.code,p_pin:S.pin}));LASTSYNC=Date.now();return true}catch(e){return false}}
 async function login(code,pin){
   try{const r=await rpc('jr_login',{p_code:code,p_pin:pin});S.pin=pin;apply(r);ls.set('jr_auth',{code:r.code,pin});S.tab='hoy';S.day=today();render();checkPush()}
   catch(e){toast(e.message)}
@@ -148,10 +157,11 @@ async function login(code,pin){
 async function create(){
   const n=$('#cn').value.trim(),bp=$('#cb').value.trim(),sp=$('#cs').value.trim();
   if(!n)return toast('Pon el nombre de tu compañera');
+  if(CREATING)return;CREATING=true;
   try{const code=await rpc('jr_create',{p_name:n,p_boss_pin:bp,p_staff_pin:sp});
     await login(code,bp);
     modal(`<div class="center"><h3>Equipo creado</h3><p class="mute">Este es el código del equipo. Ella entra con el código y su PIN; tú con el código y el tuyo.</p><div class="code">${code}</div><button class="pri" style="width:100%" onclick="closeModal()">Empezar</button></div>`)
-  }catch(e){toast(e.message)}
+  }catch(e){toast(e.message)}finally{CREATING=false}
 }
 function logout(){TM=null;ls.set('jr_timer',null);document.querySelector('.tbar')?.remove();document.body.classList.remove('hastm');ls.set('jr_auth',null);ls.set('jr_cache',null);S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],tab:'hoy',day:today()};render()}
 
@@ -191,16 +201,45 @@ const focusOn=d=>recs().reduce((a,e)=>a+(e.d===d?e.sec:0),0);
 function activeNow(id,d){if(d!==today())return false;let l=null;for(const e of S.ev)if(e.task===id&&e.d===d&&((e.type==='note'&&(e.kind==='tstart'||e.kind==='time'))||(e.type==='done')))l=e;return !!l&&l.kind==='tstart'&&(!l.at||Date.now()-new Date(l.at)<4*36e5)}
 const subOn=(id,d,i)=>{let v=false;for(const e of S.ev)if(e.type==='note'&&e.kind==='sub'&&e.task===id&&e.d===d&&e.i===i)v=!!e.on;return v};
 
+// Cada cambio se guarda primero en el dispositivo y se reintenta hasta que el servidor lo confirme.
 async function send(e){
-  S.ev.push({...e,by:S.role,id:Date.now()+Math.random()});render();
-  try{await rpc('jr_event',{p_code:S.code,p_pin:S.pin,p_ev:e});await refresh()}catch(x){toast(x.message)}render();
+  const ev={...e,cid:Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
+  OUT.push({code:S.code,ev});ls.set('jr_outbox',OUT);
+  S.ev.push({...ev,by:S.role,pending:true,id:'p'+ev.cid});render();
+  await flush();render();
+}
+async function flush(){
+  if(!S.code)return;if(FL){AG=true;return}
+  FL=true;
+  try{
+    if(boss())await pushCfg();
+    await refresh();
+    for(;;){
+      const it=OUT.find(o=>o.code===S.code);if(!it)break;
+      try{await rpc('jr_event',{p_code:S.code,p_pin:S.pin,p_ev:it.ev})}
+      catch(x){if(/No permitido|incorrecto|Solo el supervisor/.test(x.message)){OUT=OUT.filter(o=>o!==it);ls.set('jr_outbox',OUT);toast(x.message);continue}break}
+      OUT=OUT.filter(o=>o!==it);ls.set('jr_outbox',OUT);
+    }
+    await refresh();
+  }finally{FL=false}
+  if(AG){AG=false;return flush()}
+}
+async function pushCfg(){
+  for(let i=0;i<5;i++){
+    if(!ls.get('jr_dirty',false))return true;
+    const l=ls.get('jr_cfg_local');if(!l||l.code!==S.code){ls.set('jr_dirty',false);return true}
+    const sent=JSON.stringify(l.cfg);
+    try{await rpc('jr_save_cfg',{p_code:S.code,p_pin:S.pin,p_cfg:l.cfg})}catch(x){return false}
+    const cur=ls.get('jr_cfg_local');if(cur&&JSON.stringify(cur.cfg)===sent)ls.set('jr_dirty',false);
+  }
+  return true;
 }
 async function toggleSub(id,i){
   const d=S.day;if(d!==today()||boss())return;
   await send({type:'note',kind:'sub',task:id,d,i,on:!subOn(id,d,i)});
 }
 function markDone(id){closeModal();send({type:'done',task:id,d:today(),tm:nowHM()});toast('Tarea terminada')}
-async function saveCfg(){render();try{await rpc('jr_save_cfg',{p_code:S.code,p_pin:S.pin,p_cfg:S.cfg});await refresh()}catch(x){toast(x.message)}render()}
+async function saveCfg(){ls.set('jr_cfg_local',{code:S.code,cfg:S.cfg});ls.set('jr_dirty',true);render();await flush();render()}
 
 // ---------- UI helpers ----------
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
@@ -559,6 +598,7 @@ function viewAjustes(){
   <div class="card"><label>Tamaño del texto</label><div class="pills">${[['s','Pequeño'],['n','Normal'],['l','Grande'],['xl','Muy grande']].map(([v,n])=>`<button class="${ls.get('jr_fs','n')===v?'on':''}" onclick="setFS('${v}')">${n}</button>`).join('')}</div></div>
   ${pushCard()}
   ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
+  <div class="mute center" style="margin:4px 0 12px">Última sincronización: ${LASTSYNC?new Date(LASTSYNC).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—'}${pendingN()?' · '+pendingN()+' cambio(s) sin enviar':''}</div>
   <button class="danger" style="width:100%" onclick="logout()">Cerrar sesión</button>`;
 }
 function setVal(w,label,pin){modal(`<h3>${label}</h3><input id="sv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="doSet('${w}')">Guardar</button>`)}
@@ -591,7 +631,7 @@ function render(){
   const tabs=boss()?[['hoy',IC.hoy,'Hoy'],['hist',IC.hist,'Estadísticas'],['tareas',IC.tareas,'Tareas'],['ajustes',IC.ajustes,'Ajustes']]:[['hoy',IC.hoy,'Hoy'],['hist',IC.hist,'Estadísticas'],['ajustes',IC.ajustes,'Ajustes']];
   if(!tabs.some(t=>t[0]===S.tab))S.tab='hoy';
   const v={hoy:viewHoy,hist:viewStats,tareas:viewTareas,ajustes:viewAjustes}[S.tab]();
-  a.innerHTML=`<header class="top"><img src="icon.svg" alt=""><b>Jornada</b><span class="sp"></span><span class="who">${boss()?'Supervisor':esc(S.name)}</span></header><div class="wrap">${v}</div><div class="nav">${tabs.map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render();if(S.tab==='ajustes')checkPush()">${i}${n}</button>`).join('')}</div>`;
+  a.innerHTML=`<header class="top"><img src="icon.svg" alt=""><b>Jornada</b><span class="sp"></span>${pendingN()?`<button class="ghost" style="color:var(--warn)" onclick="flush().then(render)">Sin enviar · ${pendingN()}</button>`:''}<span class="who">${boss()?'Supervisor':esc(S.name)}</span></header><div class="wrap">${v}</div><div class="nav">${tabs.map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render();if(S.tab==='ajustes')checkPush()">${i}${n}</button>`).join('')}</div>`;
   if(TM&&!document.querySelector('.tbar'))tmBar();
 }
 
@@ -599,11 +639,13 @@ function render(){
 (async()=>{
   applyTheme();
   const au=ls.get('jr_auth'),c=ls.get('jr_cache');
-  if(au&&c){S.pin=au.pin;apply(c);render();if(await refresh())render();checkPush()}
+  if(au&&c){S.pin=au.pin;apply(c);render();await flush();render();checkPush()}
   else render();
   setTimeout(installBanner,1200);if(TM)tmBar();
-  setInterval(async()=>{if(S.code&&!document.querySelector('.modal')&&document.visibilityState==='visible'){if(await refresh())render()}},30000);
-  document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&S.code&&!document.querySelector('.modal')){if(await refresh())render()}});
+  const sync=async()=>{if(S.code&&!document.querySelector('.modal')&&document.visibilityState==='visible'){await flush();render()}};
+  setInterval(sync,30000);
+  document.addEventListener('visibilitychange',sync);
+  window.addEventListener('online',sync);
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
