@@ -156,7 +156,11 @@ function tasksOn(d){
   }).sort((a,b)=>(a.time||'99:99').localeCompare(b.time||'99:99'));
 }
 function isLate(k,d){if(status(k.id,d))return false;const t=today();if(d<t)return true;if(d===t&&k.time&&nowHM()>k.time)return true;return k.kind==='puntual'&&k.date<d}
-function dayStat(d){const r=tasksOn(d),n=r.filter(k=>status(k.id,d)).length;return{n,total:r.length,pct:r.length?Math.round(n/r.length*100):null}}
+// Las semanales cuentan el día en que se terminan; el domingo se suman como pendientes las que faltaron para cumplir la semana.
+function weeklyDay(d){let n=0,t=0;const last=addD(wkStart(d),6)===d;
+  weeklyOn(d).forEach(k=>{const dn=S.ev.filter(x=>x.type==='done'&&x.task===k.id&&x.d===d).length;n+=dn;t+=dn;if(last)t+=Math.max(0,(k.times||1)-wkCount(k,d))});
+  return{n,t}}
+function dayStat(d){const r=tasksOn(d),w=weeklyDay(d),n=r.filter(k=>status(k.id,d)).length+w.n,total=r.length+w.t;return{n,total,pct:total?Math.round(n/total*100):null}}
 const wkStart=d=>addD(d,-((dow(d)+6)%7));
 const wkDates=d=>{const s=wkStart(d);return [0,1,2,3,4,5,6].map(i=>addD(s,i))};
 function weeklyOn(d){const e=addD(wkStart(d),6);return S.cfg.tasks.filter(k=>k.kind==='semanal'&&e>=(k.from||'0000')&&!(k.arch&&e>=k.arch))}
@@ -360,7 +364,7 @@ function weeklyCard(){
 }
 function viewStats(){
   const t=today(),w=range(7),m=range(30),sk=streak(),bs=bestStreak();
-  const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])})}
+  const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])});if(d<t&&addD(wkStart(d),6)===d)weeklyOn(d).forEach(k=>{const m=(k.times||1)-wkCount(k,d);if(m>0)late.push([d,{title:k.title+' (semanal: faltó '+m+(m===1?' vez':' veces')+')'}])})}
   return `<div class="head"><h1>Estadísticas</h1></div>
   <div class="tiles"><div class="card"><div class="big">${w??'—'}${w!=null?'%':''}</div><div class="mute">Cumplimiento 7 días</div></div><div class="card"><div class="big">${m??'—'}${m!=null?'%':''}</div><div class="mute">Cumplimiento 30 días</div></div>
   <div class="card"><div class="big">${sk}</div><div class="mute">Racha actual (días)</div></div><div class="card"><div class="big">${bs}</div><div class="mute">Mejor racha (días)</div></div></div>
