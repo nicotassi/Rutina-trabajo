@@ -4,29 +4,34 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Jornada</title>
-<meta name="theme-color" content="#0f5f5a">
+<meta name="theme-color" content="#0d2b30">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Jornada">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon.svg">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e4e7ec;--pri:#0f5f5a;--pri2:#e7f1f0;--ok:#15803d;--bad:#b42318;--warn:#b45309;--sh:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06)}
-[data-theme=dark]{--bg:#0b1114;--card:#131c20;--tx:#e8eef0;--mu:#8b9ca3;--bd:#24323a;--pri:#34c0b3;--pri2:#10302d;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24;--sh:none}
+:root{--bg:#f4f6f8;--card:#fff;--tx:#0f172a;--mu:#64748b;--bd:#e3e7ec;--pri:#0f5f5a;--pri2:#e6f1f0;--ok:#15803d;--bad:#b42318;--warn:#b45309;--top:#0d2b30;--sh:0 1px 2px rgba(16,24,40,.04),0 1px 3px rgba(16,24,40,.06)}
+[data-theme=dark]{--bg:#0a1013;--card:#121b1f;--tx:#e8eef0;--mu:#8b9ca3;--bd:#23313a;--pri:#34c0b3;--pri2:#0f2f2c;--ok:#4ade80;--bad:#f87171;--warn:#fbbf24;--top:#0e171b;--sh:none}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-feature-settings:"cv11","ss01","tnum";-webkit-font-smoothing:antialiased;padding-bottom:84px}
-.wrap{max-width:560px;margin:0 auto;padding:20px 16px}
+body.hastm{padding-bottom:170px}
+.top{position:sticky;top:0;z-index:6;background:var(--top);color:#fff;display:flex;align-items:center;gap:10px;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top))}
+.top img{width:26px;height:26px;border-radius:7px}.top b{font-weight:650;letter-spacing:-.01em;font-size:16px}
+.who{font-size:12px;opacity:.85;border:1px solid rgba(255,255,255,.28);padding:2px 10px;border-radius:99px;font-weight:500}
+.wrap{max-width:560px;margin:0 auto;padding:18px 16px}
 h1{font-size:22px;font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.25}
-h2{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin:22px 0 8px}
+h2{font-size:11.5px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--mu);margin:22px 0 8px}
 h3{margin:0 0 10px;font-size:17px;font-weight:650;letter-spacing:-.01em}
 .mute{color:var(--mu);font-size:13.5px}
 .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px 16px;box-shadow:var(--sh);margin-bottom:10px}
 button,input,select,textarea{font:inherit;color:inherit}
 input,select,textarea{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);margin:5px 0 12px;font-size:15px}
 input:focus,select:focus,textarea:focus{outline:2px solid color-mix(in srgb,var(--pri) 35%,transparent);border-color:var(--pri)}
-label{font-size:12px;color:var(--mu);font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+label{font-size:11.5px;color:var(--mu);font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 button{border:1px solid var(--bd);background:var(--card);border-radius:10px;padding:9px 14px;cursor:pointer;font-weight:500;font-size:14.5px}
 button:active{transform:scale(.98)}
 button.pri{background:var(--pri);border-color:var(--pri);color:#fff;font-weight:600}
@@ -36,52 +41,59 @@ button.danger{color:var(--bad)}
 button[disabled]{opacity:.45;cursor:default}
 .row{display:flex;align-items:center;gap:10px}.sp{flex:1;min-width:0}
 .head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:16px}
-.nav{position:fixed;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--card) 92%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--bd);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
+.nav{position:fixed;bottom:0;left:0;right:0;background:color-mix(in srgb,var(--card) 94%,transparent);backdrop-filter:blur(10px);border-top:1px solid var(--bd);display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom));z-index:5}
 .nav button{flex:1;border:0;background:none;font-size:11.5px;font-weight:500;color:var(--mu);padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:3px}
 .nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
 .nav button.on{color:var(--pri);font-weight:650}
+.quote{border-left:3px solid var(--pri);padding:4px 0 4px 14px;margin:0 0 16px}
+.quote small{display:block;font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--pri);font-weight:600;margin-bottom:3px}
+.quote p{margin:0;font-size:15.5px;line-height:1.45;font-weight:500;letter-spacing:-.005em}
 .task{display:flex;gap:12px;align-items:flex-start}
-.chk{width:28px;height:28px;border-radius:50%;border:1.75px solid #c3cad3;flex:none;display:grid;place-items:center;background:none;padding:0;font-size:15px;color:#fff;margin-top:1px}
+.task.run{border-color:var(--pri);box-shadow:0 0 0 3px color-mix(in srgb,var(--pri) 16%,transparent)}
+.chk{width:26px;height:26px;border-radius:50%;border:1.75px solid #c3cad3;flex:none;display:grid;place-items:center;font-size:14px;color:#fff;margin-top:1px}
 [data-theme=dark] .chk{border-color:#3a4a53}
 .chk.on{background:var(--ok);border-color:var(--ok)}.chk.late{border-color:var(--bad)}
 .tt{font-weight:600;letter-spacing:-.005em}.done .tt{text-decoration:line-through;color:var(--mu);font-weight:500}
 .chip{display:inline-block;font-size:11.5px;padding:2px 8px;border-radius:6px;background:var(--pri2);color:var(--pri);margin:4px 5px 0 0;font-weight:600}
 .chip.bad{background:color-mix(in srgb,var(--bad) 11%,transparent);color:var(--bad)}.chip.warn{background:color-mix(in srgb,var(--warn) 13%,transparent);color:var(--warn)}
 .bar{height:8px;border-radius:9px;background:var(--bd);overflow:hidden}.bar i{display:block;height:100%;background:var(--pri);border-radius:9px;transition:width .3s}
-.big{font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.big{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1}
 .note{font-size:13.5px;background:var(--bg);border-radius:8px;padding:6px 10px;margin-top:6px}
 .note.b{border-left:3px solid var(--pri)}
-.days{display:flex;gap:4px;align-items:flex-end;height:90px}
-.days div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;height:100%;font-size:11px;color:var(--mu);cursor:pointer;gap:3px}
-.days b{display:block;width:100%;border-radius:4px 4px 2px 2px;background:var(--pri);min-height:3px}
+.go{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:10px;padding:11px}
+.go svg{width:16px;height:16px;fill:currentColor}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px}
+.tiles .card{margin:0}.tiles .mute{margin-top:6px}
+.hm{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.hm div{aspect-ratio:1;border-radius:7px;display:grid;place-items:center;font-size:11px;background:var(--bd);color:var(--mu);cursor:pointer}
+.hm .hd{background:none;aspect-ratio:auto;cursor:default;font-weight:600;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase}
+.hm .fu{background:none;border:1px dashed var(--bd);cursor:default}
+.lg{display:flex;gap:12px;flex-wrap:wrap;margin-top:10px;font-size:11.5px;color:var(--mu)}.lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.bh{display:flex;align-items:center;justify-content:space-between;margin:20px 0 8px}
+.bh b{font-size:11.5px;letter-spacing:.07em;text-transform:uppercase;color:var(--mu)}
 .modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:flex;align-items:flex-end;justify-content:center;z-index:20}
 .modal>div{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:20px 16px calc(18px + env(safe-area-inset-bottom));max-height:90vh;overflow:auto}
 .pills{display:flex;gap:6px;flex-wrap:wrap;margin:5px 0 12px}
 .pills button{padding:7px 13px;border-radius:99px;font-size:13.5px}.pills button.on{background:var(--pri);color:#fff;border-color:var(--pri)}
 [data-theme=dark] .pills button.on{color:#04201d}
+.opt{display:block;width:100%;text-align:left;padding:14px;margin-bottom:8px}.opt b{display:block;font-size:15.5px}.opt span{font-size:13px;color:var(--mu);font-weight:400}
 .toast{position:fixed;left:50%;bottom:96px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:10px;z-index:30;font-size:14px;font-weight:500;max-width:90vw}
 .login{min-height:100vh;display:flex;align-items:center}.login .card{width:100%;padding:26px 22px}
 .logo{width:56px;height:56px;border-radius:14px;margin:0 auto 12px;display:block}
 .center{text-align:center}
 .code{font:700 30px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:5px;color:var(--pri);margin:10px 0}
 .inst{position:fixed;left:12px;right:12px;bottom:calc(84px + env(safe-area-inset-bottom));max-width:536px;margin:0 auto;background:var(--card);border:1px solid var(--pri);border-radius:16px;padding:14px;z-index:15;box-shadow:0 8px 30px rgba(15,23,42,.18)}
-.inst.top{bottom:auto;top:12px}
-.inst img{width:42px;height:42px;border-radius:10px}
+.inst.top2{bottom:auto;top:12px}.inst img{width:42px;height:42px;border-radius:10px}
 .step{display:flex;gap:10px;align-items:center;font-size:14.5px;margin:6px 0;color:var(--tx);font-weight:400;text-transform:none;letter-spacing:0}
 .step input{width:19px;height:19px;margin:0;flex:none;accent-color:var(--pri)}.step.on{color:var(--mu);text-decoration:line-through}
 .msg{background:var(--pri2);border-color:color-mix(in srgb,var(--pri) 40%,transparent)}
-.msg b{display:block;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--pri);margin-bottom:2px}
-.acts{display:flex;flex-direction:column;align-items:flex-end;gap:0}
-.tbar{position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));max-width:536px;margin:0 auto;background:var(--tx);color:var(--bg);border-radius:16px;padding:12px 14px;z-index:12;display:flex;align-items:center;gap:10px;box-shadow:0 8px 28px rgba(15,23,42,.3)}
-.tbar.brk{background:var(--pri);color:#fff}
-[data-theme=dark] .tbar.brk{color:#04201d}
-.tbar .tbl{font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg b{display:block;font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--pri);margin-bottom:2px}
+.tbar{position:fixed;left:12px;right:12px;bottom:calc(72px + env(safe-area-inset-bottom));max-width:536px;margin:0 auto;background:var(--top);color:#fff;border-radius:16px;padding:12px 14px;z-index:12;display:flex;align-items:center;gap:10px;box-shadow:0 8px 28px rgba(15,23,42,.3)}
+.tbar.brk{background:var(--pri)}[data-theme=dark] .tbar.brk{color:#04201d}
+.tbar .tbl{font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.75;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tbar .tbt{font-size:28px;font-weight:700;letter-spacing:-.02em;line-height:1.1}
 .tbar button{background:rgba(255,255,255,.16);border:0;color:inherit}
 .tbar button.pri{background:#fff;color:#0f172a}
-[data-theme=dark] .tbar button{background:rgba(0,0,0,.15)}
-[data-theme=dark] .tbar button.pri{background:#0b1114;color:#e8eef0}
-.hastm{padding-bottom:170px!important}
 .trow{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
 </style>
 </head>
@@ -102,6 +114,7 @@ const dow=s=>dt(s).getDay();
 const DN=['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
 const longD=s=>dt(s).toLocaleDateString('es',{weekday:'long',day:'numeric',month:'long'});
 const nowHM=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())};
+const uid=()=>'t'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
 async function rpc(fn,args){
   const r=await fetch(`${SB}/rest/v1/rpc/${fn}`,{method:'POST',headers:{apikey:KEY,Authorization:'Bearer '+KEY,'Content-Type':'application/json'},body:JSON.stringify(args)});
@@ -109,25 +122,25 @@ async function rpc(fn,args){
   if(!r.ok)throw new Error((j&&j.message)||'Error de conexión');
   return j;
 }
-let S={code:null,pin:null,role:null,name:'',cfg:{tasks:[]},ev:[],tab:'hoy',day:today(),loading:false};
+let S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],tab:'hoy',day:today()};
 const boss=()=>S.role==='boss';
-function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;S.cfg=Object.assign({tasks:[]},r.config||{});S.cfg.tasks=S.cfg.tasks||[];S.ev=r.events||[];ls.set('jr_cache',r)}
+function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;S.cfg=Object.assign({tasks:[],blocks:[]},r.config||{});S.cfg.tasks=S.cfg.tasks||[];S.cfg.blocks=S.cfg.blocks||[];S.ev=r.events||[];ls.set('jr_cache',r)}
 async function refresh(){if(!S.code)return;try{apply(await rpc('jr_login',{p_code:S.code,p_pin:S.pin}));return true}catch(e){return false}}
 async function login(code,pin){
-  try{const r=await rpc('jr_login',{p_code:code,p_pin:pin});S.pin=pin;apply(r);ls.set('jr_auth',{code:r.code,pin});S.tab='hoy';S.day=today();render()}
-  catch(e){toast(''+e.message)}
+  try{const r=await rpc('jr_login',{p_code:code,p_pin:pin});S.pin=pin;apply(r);ls.set('jr_auth',{code:r.code,pin});S.tab='hoy';S.day=today();render();checkPush()}
+  catch(e){toast(e.message)}
 }
 async function create(){
   const n=$('#cn').value.trim(),bp=$('#cb').value.trim(),sp=$('#cs').value.trim();
   if(!n)return toast('Pon el nombre de tu compañera');
   try{const code=await rpc('jr_create',{p_name:n,p_boss_pin:bp,p_staff_pin:sp});
     await login(code,bp);
-    modal(`<div class="center"><h3>¡Equipo creado!</h3><p class="mute">Este es el código del equipo. Ella entra con el código y su PIN; tú con el código y el tuyo.</p><div class="code">${code}</div><button class="pri" style="width:100%" onclick="closeModal()">Empezar</button></div>`)
-  }catch(e){toast(''+e.message)}
+    modal(`<div class="center"><h3>Equipo creado</h3><p class="mute">Este es el código del equipo. Ella entra con el código y su PIN; tú con el código y el tuyo.</p><div class="code">${code}</div><button class="pri" style="width:100%" onclick="closeModal()">Empezar</button></div>`)
+  }catch(e){toast(e.message)}
 }
-function logout(){ls.set('jr_auth',null);ls.set('jr_cache',null);S={code:null,pin:null,role:null,name:'',cfg:{tasks:[]},ev:[],tab:'hoy',day:today()};render()}
+function logout(){TM=null;ls.set('jr_timer',null);document.querySelector('.tbar')?.remove();document.body.classList.remove('hastm');ls.set('jr_auth',null);ls.set('jr_cache',null);S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],tab:'hoy',day:today()};render()}
 
-// ---- lógica de tareas ----
+// ---------- lógica de tareas ----------
 function status(id,d){let s=null;for(const e of S.ev)if(e.task===id&&e.d===d&&(e.type==='done'||e.type==='undone'))s=e;return s&&s.type==='done'?s:null}
 function doneAny(id){const m={};for(const e of S.ev)if(e.task===id&&(e.type==='done'||e.type==='undone'))m[e.d]=e.type;return Object.values(m).includes('done')}
 function tasksOn(d){
@@ -143,43 +156,137 @@ function isLate(k,d){if(status(k.id,d))return false;const t=today();if(d<t)retur
 function dayStat(d){const r=tasksOn(d),n=r.filter(k=>status(k.id,d)).length;return{n,total:r.length,pct:r.length?Math.round(n/r.length*100):null}}
 function streak(){let s=0,d=today();const st=dayStat(d);if(st.total&&st.n<st.total)d=addD(d,-1);
   for(let i=0;i<120;i++){const x=dayStat(d);if(!x.total){d=addD(d,-1);continue}if(x.n===x.total){s++;d=addD(d,-1)}else break}return s}
+function bestStreak(){let b=0,c=0;for(let i=119;i>=0;i--){const d=addD(today(),-i),x=dayStat(d);if(!x.total)continue;if(x.n===x.total){c++;b=Math.max(b,c)}else if(d<today())c=0}return b}
 function range(n){let a=0,b=0;for(let i=0;i<n;i++){const x=dayStat(addD(today(),-i));a+=x.n;b+=x.total}return b?Math.round(a/b*100):null}
-const notesFor=(id,d)=>S.ev.filter(e=>e.task===id&&e.d===d&&(e.type==='note'||e.type==='comment'));
+const notesFor=(id,d)=>S.ev.filter(e=>e.task===id&&e.d===d&&(e.type==='comment'||(e.type==='note'&&!e.kind&&e.text)));
+// tiempo: se guarda dentro de eventos permitidos a la compañera ('done' con sec, o 'note' con kind:'time')
+const recs=()=>S.ev.filter(e=>((e.type==='done'&&e.sec>0)||(e.type==='note'&&e.kind==='time'))&&e.task&&e.d);
+const timeOn=(id,d)=>recs().reduce((a,e)=>a+(e.task===id&&e.d===d?e.sec:0),0);
+const focusOn=d=>recs().reduce((a,e)=>a+(e.d===d?e.sec:0),0);
+function activeNow(id,d){if(d!==today())return false;let l=null;for(const e of S.ev)if(e.task===id&&e.d===d&&((e.type==='note'&&(e.kind==='tstart'||e.kind==='time'))||(e.type==='done')))l=e;return !!l&&l.kind==='tstart'&&(!l.at||Date.now()-new Date(l.at)<4*36e5)}
+const subOn=(id,d,i)=>{let v=false;for(const e of S.ev)if(e.type==='note'&&e.kind==='sub'&&e.task===id&&e.d===d&&e.i===i)v=!!e.on;return v};
 
 async function send(e){
-  S.ev.push({...e,by:S.role,id:Date.now()});render();
-  try{await rpc('jr_event',{p_code:S.code,p_pin:S.pin,p_ev:e});await refresh()}catch(x){toast(''+x.message)}render();
+  S.ev.push({...e,by:S.role,id:Date.now()+Math.random()});render();
+  try{await rpc('jr_event',{p_code:S.code,p_pin:S.pin,p_ev:e});await refresh()}catch(x){toast(x.message)}render();
 }
-function subOn(id,d,i){let v=false;for(const e of S.ev)if(e.type==='sub'&&e.task===id&&e.d===d&&e.i===i)v=!!e.on;return v}
 async function toggleSub(id,i){
   const d=S.day;if(d!==today()||boss())return;
-  const k=S.cfg.tasks.find(x=>x.id===id);if(!k)return;
-  const cur=(k.steps||[]).map((_,j)=>subOn(id,d,j));const was=cur[i];cur[i]=!was;
-  await send({type:'sub',task:id,d,i,on:!was});
-  const all=cur.every(Boolean),isDone=!!status(id,d);
-  if(all&&!isDone){await send({type:'done',task:id,d,tm:nowHM()});toast('¡Tarea completa!')}
-  else if(!all&&isDone)await send({type:'undone',task:id,d});
+  await send({type:'note',kind:'sub',task:id,d,i,on:!subOn(id,d,i)});
 }
-function toggle(id){
-  const d=S.day;if(d!==today()||boss())return;
-  const on=!!status(id,d);
-  send({type:on?'undone':'done',task:id,d,tm:nowHM()});
-  if(!on)toast('¡Hecho!');
-}
-async function saveCfg(){render();try{await rpc('jr_save_cfg',{p_code:S.code,p_pin:S.pin,p_cfg:S.cfg});await refresh()}catch(x){toast(''+x.message)}render()}
+function markDone(id){closeModal();send({type:'done',task:id,d:today(),tm:nowHM()});toast('Tarea terminada')}
+async function saveCfg(){render();try{await rpc('jr_save_cfg',{p_code:S.code,p_pin:S.pin,p_cfg:S.cfg});await refresh()}catch(x){toast(x.message)}render()}
 
-// ---- UI helpers ----
-function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
+// ---------- UI helpers ----------
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),2600)}
 function modal(h){closeModal();const m=document.createElement('div');m.className='modal';m.innerHTML=`<div>${h}</div>`;m.onclick=e=>{if(e.target===m)closeModal()};document.body.appendChild(m)}
 function closeModal(){document.querySelectorAll('.modal').forEach(m=>m.remove())}
 function applyTheme(){const v=ls.get('jr_theme','auto');document.documentElement.dataset.theme=(v==='dark'||(v==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches))?'dark':'light'}
 function setTheme(v){ls.set('jr_theme',v);applyTheme();render()}
+const PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
 
-// ---- vistas ----
+// ---------- frases del emprendedor ----------
+const QUOTES=[
+"Empieza donde estás, con lo que tienes. Lo importante es empezar.",
+"La disciplina es el puente entre tus metas y tus resultados.",
+"Un negocio no se construye con ganas, sino con hábitos repetidos cada día.",
+"No esperes a sentirte lista: actúa y la confianza llega después.",
+"Lo que haces todos los días pesa más que lo que haces de vez en cuando.",
+"Los clientes recuerdan la constancia mucho más que la perfección.",
+"Cada tarea terminada es un ladrillo en el negocio que estás construyendo.",
+"El orden de hoy es la tranquilidad de mañana.",
+"Enfócate en lo importante; lo urgente casi siempre puede esperar cinco minutos.",
+"Un plan imperfecto ejecutado hoy supera a un plan perfecto que nunca empieza.",
+"Emprender es resolver problemas con paciencia y buen humor.",
+"Cuida los pequeños detalles: ahí se gana la confianza de los clientes.",
+"Tu tiempo es tu capital más valioso. Invierte cada hora con intención.",
+"No cuentes los días; haz que los días cuenten.",
+"Los grandes resultados son la suma de muchos días normales bien hechos.",
+"Termina lo que empiezas: la mitad del éxito es cerrar bien.",
+"El foco es decir que no a lo bueno para poder decir que sí a lo mejor.",
+"Hoy es un buen día para mejorar un uno por ciento.",
+"Un emprendedor no espera la motivación; construye el hábito.",
+"Lo difícil de hoy será la rutina de mañana.",
+"Trabaja como si cada cliente fuera el primero que tienes.",
+"La constancia convierte lo ordinario en extraordinario.",
+"Si algo vale la pena, vale la pena hacerlo bien y a tiempo.",
+"Antes de abrir mil frentes, cierra uno por completo.",
+"Los errores son datos. Aprende rápido y sigue avanzando.",
+"El éxito se parece mucho a una lista de tareas cumplidas con constancia.",
+"Una hora de trabajo enfocado vale más que cuatro distraídas.",
+"Haz primero lo que más te cuesta; el resto se vuelve liviano.",
+"Quien cuida su tiempo cuida su negocio.",
+"No necesitas hacerlo todo; necesitas hacer bien lo que importa.",
+"La puntualidad es la forma más simple de profesionalismo.",
+"Una buena rutina vale más que una gran idea sin ejecución.",
+"Cada mañana tienes una página en blanco: escríbela con propósito.",
+"El progreso no hace ruido, pero se acumula.",
+"Tu negocio crece al ritmo de tus hábitos.",
+"Pide ayuda a tiempo, delega con claridad y celebra los avances.",
+"La excelencia no es un acto, es un hábito diario.",
+"Las ideas valen poco hasta que se convierten en tareas concretas.",
+"Gana tu día antes del mediodía y el resto fluye.",
+"Ordena tu espacio, ordena tu mente, ordena tu negocio.",
+"No compares tu capítulo uno con el capítulo veinte de otra persona.",
+"Pequeños pasos, todos los días, llegan más lejos que grandes saltos ocasionales.",
+"El cliente satisfecho es la mejor publicidad que existe.",
+"Prioriza: no todo lo que brilla es importante.",
+"La paciencia y la constancia hacen caer los muros más altos.",
+"Lo que mides, mejora. Lo que registras, se vuelve consciente.",
+"Un día a la vez, una tarea a la vez, un cliente a la vez.",
+"El talento abre puertas; la disciplina las mantiene abiertas.",
+"Cuando sientas pereza, recuerda por qué empezaste.",
+"Haz que tu palabra y tus plazos valgan oro.",
+"No busques el momento perfecto: crea el momento y hazlo valioso.",
+"El descanso también es parte del trabajo bien hecho.",
+"Cada \"ya lo hice\" suma confianza en ti misma.",
+"Termina el día sabiendo qué lograste y qué sigue mañana.",
+"La claridad de hoy evita el caos de mañana.",
+"Trabajar en equipo es multiplicar, no sumar.",
+"Lo importante rara vez es urgente; agéndalo antes de que lo sea.",
+"Un buen emprendedor aprende de cada día, bueno o malo.",
+"La calidad se recuerda mucho después de que se olvida el precio.",
+"Empieza con una tarea pequeña; el impulso hace el resto.",
+"Constancia es seguir cuando ya no hay aplausos.",
+"Cuida a tus clientes y ellos cuidarán de tu negocio.",
+"Lo que postergas hoy se convierte en el problema de mañana.",
+"Dedica tiempo a lo que construye, no solo a lo que apaga incendios.",
+"Un negocio ordenado inspira confianza desde el primer vistazo.",
+"El crecimiento está del otro lado de la zona cómoda.",
+"Nadie llega lejos sin aprender a organizarse primero.",
+"Haz de tu agenda un reflejo de tus prioridades.",
+"La energía se cuida: concentra, descansa, vuelve a concentrar.",
+"Si puedes hacerlo en dos minutos, hazlo ahora.",
+"Las metas se alcanzan en pasos, no en deseos.",
+"Tu actitud al comenzar define la calidad de lo que terminas.",
+"Mejor avanzar despacio con rumbo que correr sin dirección.",
+"El profesionalismo se nota en lo que haces cuando nadie te mira.",
+"Un equipo ordenado es un equipo que llega más lejos.",
+"Que tu constancia sea más fuerte que tus excusas.",
+"Hoy se siembra lo que el negocio cosechará mañana.",
+"No es magia: es método, foco y repetición.",
+"La confianza se construye cumpliendo lo pequeño.",
+"Haz una cosa a la vez y hazla completa.",
+"Las buenas empresas están hechas de buenas costumbres.",
+"Aprende a medir tu tiempo y aprenderás a mejorar tus resultados.",
+"El que se organiza, gana horas; el que se enfoca, gana días.",
+"Cumplir contigo misma es el primer paso para cumplir con los demás.",
+"Persistir no es repetir lo mismo: es ajustar y seguir.",
+"Un pequeño avance hoy es un gran logro dentro de un año.",
+"Tu negocio es tan fuerte como tus rutinas más simples.",
+"Cada tarea que cierras libera espacio mental para crear.",
+"Eres responsable de tu energía, tu tiempo y tu enfoque.",
+"Lo mejor que puedes hacer hoy por tu futuro es cumplir con tu presente.",
+"Sé el tipo de profesional que quisieras tener como socia.",
+"Hoy cuenta. Hazlo contar."
+];
+const quoteOf=d=>QUOTES[Math.floor(Date.parse(d+'T00:00:00Z')/864e5)%QUOTES.length];
+
+// ---------- vistas ----------
 function viewLogin(){
   return `<div class="wrap login"><div class="card center">
-  <img class="logo" src="icon.svg" alt=""><h1>Jornada</h1><p class="mute">Tareas diarias, claras y a la vista.</p>
-  <div style="text-align:left"><label>Código del equipo</label><input id="lc" placeholder="ABC123" autocapitalize="characters" value="${esc(ls.get('jr_lastcode',''))}">
+  <img class="logo" src="icon.svg" alt=""><h1>Jornada</h1><p class="mute">Tareas diarias, tiempo y constancia.</p>
+  <div style="text-align:left;margin-top:14px"><label>Código del equipo</label><input id="lc" placeholder="ABC123" autocapitalize="characters" value="${esc(ls.get('jr_lastcode',''))}">
   <label>PIN</label><input id="lp" type="password" inputmode="numeric" placeholder="••••"></div>
   <button class="pri" style="width:100%" onclick="ls.set('jr_lastcode',$('#lc').value.trim().toUpperCase());login($('#lc').value.trim(),$('#lp').value.trim())">Entrar</button>
   <p><button class="ghost" onclick="modal(createForm())">Crear un equipo nuevo</button></p></div></div>`;
@@ -189,85 +296,101 @@ function createForm(){return `<h3>Crear equipo</h3><label>Nombre de tu compañer
 <label>PIN de ella (distinto al tuyo)</label><input id="cs" type="password" inputmode="numeric"><button class="pri" style="width:100%" onclick="create()">Crear</button>`}
 
 function taskRow(k,d){
-  const on=status(k.id,d),late=isLate(k,d),ns=notesFor(k.id,d),can=!boss()&&d===today(),tsec=timeOn(k.id,d),live=boss()&&activeNow(k.id,d),mine=TM&&TM.task===k.id&&TM.d===d,steps=k.steps||[],sd=steps.map((_,i)=>subOn(k.id,d,i)),hasS=steps.length>0;
-  return `<div class="card task ${on?'done':''}">
-  <button class="chk ${on?'on':''} ${late?'late':''}" ${can&&!hasS?'':'disabled'} ${hasS&&!on?'style="font-size:11px;color:var(--mu)"':''} onclick="toggle('${k.id}')">${on?'✓':(hasS?sd.filter(Boolean).length+'/'+steps.length:'')}</button>
+  const on=status(k.id,d),late=isLate(k,d),ns=notesFor(k.id,d),can=!boss()&&d===today();
+  const tsec=timeOn(k.id,d),live=boss()&&activeNow(k.id,d),mine=!!TM&&TM.task===k.id&&TM.d===d;
+  const steps=k.steps||[],sd=steps.map((_,i)=>subOn(k.id,d,i));
+  return `<div class="card task ${on?'done':''} ${mine?'run':''}">
+  <div class="chk ${on?'on':''} ${late?'late':''}">${on?'✓':''}</div>
   <div class="sp"><div class="tt">${esc(k.title)}</div>
   ${k.desc?`<div class="mute">${esc(k.desc)}</div>`:''}
-  ${hasS?`<div style="margin-top:6px">${steps.map((t,i)=>`<label class="step ${sd[i]?'on':''}"><input type="checkbox" ${sd[i]?'checked':''} ${can?'':'disabled'} onchange="toggleSub('${k.id}',${i})"> ${esc(t)}</label>`).join('')}</div>`:''}
-  <div>${k.time?`<span class="chip ${late?'bad':''}">Hasta ${k.time}</span>`:''}${k.essential?'<span class="chip warn">Prioritaria</span>':''}${k.kind==='puntual'&&k.date<d?'<span class="chip bad">Arrastrada</span>':''}${on&&on.tm?`<span class="chip">Hecha ${on.tm}</span>`:''}${tsec>0?`<span class="chip">Dedicado ${fmtMin(tsec)}</span>`:''}${live?'<span class="chip warn">Trabajando ahora</span>':''}${mine?'<span class="chip warn">En curso</span>':''}${late&&!on?'<span class="chip bad">Atrasada</span>':''}</div>
+  ${steps.length?`<div style="margin-top:6px">${steps.map((t,i)=>`<label class="step ${sd[i]?'on':''}"><input type="checkbox" ${sd[i]?'checked':''} ${can&&!on?'':'disabled'} onchange="toggleSub('${k.id}',${i})"> ${esc(t)}</label>`).join('')}</div>`:''}
+  <div>${k.time?`<span class="chip ${late?'bad':''}">Hasta ${k.time}</span>`:''}${k.essential?'<span class="chip warn">Prioritaria</span>':''}${k.kind==='puntual'&&k.date<d?'<span class="chip bad">Arrastrada</span>':''}${on&&on.tm?`<span class="chip">Terminada ${on.tm}</span>`:''}${tsec>0?`<span class="chip">Tiempo ${fmtMin(tsec)}</span>`:''}${late&&!on?'<span class="chip bad">Atrasada</span>':''}${live?'<span class="chip warn">Trabajando ahora</span>':''}${mine?'<span class="chip warn">En curso</span>':''}</div>
   ${ns.map(n=>`<div class="note ${n.by==='boss'?'b':''}">${n.by==='boss'?'<b>Supervisor:</b> ':''}${esc(n.text)}</div>`).join('')}
+  ${can&&!on&&!mine?`<button class="pri go" onclick="tmChoose('${k.id}')">${PLAY} Iniciar</button>`:''}
   </div>
-  <div class="acts">${can&&!on&&!mine?`<button class="ghost" onclick="tmChoose('${k.id}')">Iniciar</button>`:''}<button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${boss()?'Comentar':'Nota'}</button></div></div>`;
+  <button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${boss()?'Comentar':'Nota'}</button></div>`;
 }
 function viewHoy(){
-  const d=S.day,ts=tasksOn(d),st=dayStat(d),t=today();
-  const pend=ts.filter(k=>!status(k.id,d)),hechas=ts.filter(k=>status(k.id,d));
-  return `<div class="head"><div><h1>${boss()?esc(S.name):'Hola, '+esc(S.name)}</h1><div class="mute" style="text-transform:none">${d===t?'Hoy · ':''}${longD(d)}</div></div>
+  const d=S.day,ts=tasksOn(d),st=dayStat(d),t=today(),blocks=S.cfg.blocks||[],foc=focusOn(d),sk=streak();
+  const groups=[...blocks.map(b=>({n:b.name,l:ts.filter(k=>k.block===b.id)})),{n:blocks.length?'Otras tareas':'',l:ts.filter(k=>!blocks.some(b=>b.id===k.block))}].filter(g=>g.l.length);
+  groups.forEach(g=>g.l.sort((a,b)=>(!!status(a.id,d))-(!!status(b.id,d))));
+  return `<div class="head"><div><h1>${boss()?esc(S.name):'Hola, '+esc(S.name)}</h1><div class="mute">${d===t?'Hoy · ':''}${longD(d)}</div></div>
   <div class="row"><button onclick="S.day=addD(S.day,-1);render()">‹</button><button onclick="S.day=today();render()" ${d===t?'disabled':''}>Hoy</button><button onclick="S.day=addD(S.day,1);render()" ${d>=t?'disabled':''}>›</button></div></div>
-  <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${(()=>{const f=ts.reduce((a,k)=>a+timeOn(k.id,d),0);return f?` · Enfoque ${fmtMin(f)}`:''})()}${streak()?` · Racha de ${streak()}`:''}</div></div></div></div>
+  <div class="quote"><small>Frase del día</small><p>${esc(quoteOf(d))}</p></div>
   ${S.cfg.msg&&S.cfg.msg.text&&S.cfg.msg.date===d?`<div class="card msg"><b>Mensaje${boss()?'':' de tu supervisor'}</b><div>${esc(S.cfg.msg.text)}</div></div>`:''}
-  ${boss()?`<button style="width:100%;margin-bottom:10px" onclick="msgModal()">Mensaje para ella</button>`:''}
-  ${pend.length?`<h2>Pendientes</h2>${pend.map(k=>taskRow(k,d)).join('')}`:''}
-  ${hechas.length?`<h2>Hechas</h2>${hechas.map(k=>taskRow(k,d)).join('')}`:''}
-  ${st.total&&!pend.length?'<div class="card center">Todo listo por hoy</div>':''}`;
+  <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${foc?` · Enfoque ${fmtMin(foc)}`:''}${sk?` · Racha ${sk} ${sk===1?'día':'días'}`:''}</div></div></div></div>
+  ${boss()?`<button style="width:100%;margin-bottom:6px" onclick="msgModal()">Dejar un mensaje para ella</button>`:''}
+  ${groups.map(g=>`${g.n?`<h2>${esc(g.n)}</h2>`:'<h2>Tareas</h2>'}${g.l.map(k=>taskRow(k,d)).join('')}`).join('')}
+  ${!ts.length?`<div class="card mute center">${boss()?'Aún no hay tareas para este día. Créalas en la pestaña Tareas.':'No tienes tareas para este día.'}</div>`:''}
+  ${st.total&&st.n===st.total?'<div class="card center"><b>Día completo.</b> Todas las tareas terminadas.</div>':''}`;
 }
-function viewHist(){
-  const t=today(),days=[];for(let i=13;i>=0;i--)days.push(addD(t,-i));
-  const w=range(7),m=range(30);
-  const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])})}
-  return `<div class="head"><h1>Historial</h1></div>
-  <div class="row"><div class="card sp center"><div class="big">${w??'—'}${w!=null?'%':''}</div><div class="mute">Últimos 7 días</div></div><div class="card sp center"><div class="big">${m??'—'}${m!=null?'%':''}</div><div class="mute">Últimos 30 días</div></div><div class="card sp center"><div class="big">${streak()}</div><div class="mute">Racha de días</div></div></div>
-  <div class="card"><h3>Últimos 14 días</h3><div class="days">${days.map(d=>{const x=dayStat(d);return `<div onclick="S.day='${d}';S.tab='hoy';render()"><b style="height:${x.pct??0}%;${x.pct==null?'background:var(--bd)':x.pct<60?'background:var(--bad)':x.pct<100?'background:var(--warn)':''}"></b>${DN[dow(d)][0]}</div>`}).join('')}</div><div class="mute" style="margin-top:6px">Toca una barra para ver ese día.</div></div>
-  ${timeCard()}
-  <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute" style="text-transform:none">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente</div>'}`;
+function heat(){
+  const t=today(),dd=(dow(t)+6)%7,start=addD(t,-dd-21),cells=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].map(x=>`<div class="hd">${x}</div>`);
+  for(let i=0;i<28;i++){const d=addD(start,i);
+    if(d>t){cells.push('<div class="fu"></div>');continue}
+    const x=dayStat(d);let bg='',c='';
+    if(x.pct==null){bg='';}else if(x.pct===100){bg='background:var(--pri);color:#fff'}else if(x.pct>=60){bg='background:color-mix(in srgb,var(--warn) 55%,var(--card));color:var(--tx)'}else{bg='background:color-mix(in srgb,var(--bad) 45%,var(--card));color:var(--tx)'}
+    cells.push(`<div style="${bg}${d===t?';outline:2px solid var(--tx);outline-offset:1px':''}" onclick="S.day='${d}';S.tab='hoy';render()">${dt(d).getDate()}</div>`)}
+  return `<div class="card"><h3>Últimas 4 semanas</h3><div class="hm">${cells.join('')}</div><div class="lg"><span><i style="background:var(--pri)"></i>Completo</span><span><i style="background:color-mix(in srgb,var(--warn) 55%,var(--card))"></i>Parcial</span><span><i style="background:color-mix(in srgb,var(--bad) 45%,var(--card))"></i>Bajo</span><span><i style="background:var(--bd)"></i>Sin tareas</span></div></div>`;
 }
-function msgModal(){const m=S.cfg.msg||{};
-  modal(`<h3>Mensaje para ${esc(S.name)}</h3><p class="mute">Lo verá arriba en "Hoy" durante ese día.</p><textarea id="mg" rows="3" placeholder="Ej: Hoy la prioridad es el reporte mensual">${esc(m.text||'')}</textarea><label>Para</label><div class="pills"><button id="m0" class="on" onclick="this.classList.add('on');$('#m1').classList.remove('on')">Hoy</button><button id="m1" onclick="this.classList.add('on');$('#m0').classList.remove('on')">Mañana</button></div><button class="pri" style="width:100%" onclick="saveMsg()">Publicar</button>${m.text?`<p class="center"><button class="ghost danger" onclick="S.cfg.msg=null;closeModal();saveCfg()">Quitar mensaje</button></p>`:''}`)}
-function saveMsg(){const t=$('#mg').value.trim();if(!t)return;const d=$('#m1').classList.contains('on')?addD(today(),1):today();S.cfg.msg={text:t,date:d};closeModal();saveCfg();toast('Mensaje publicado')}
 function timeCard(){
-  const from=addD(today(),-6),m={};
-  S.ev.forEach(e=>{if(e.type==='time'&&e.d>=from){const o=m[e.task]=m[e.task]||{sec:0,days:new Set(),n:0};o.sec+=e.sec||0;o.days.add(e.d);o.n++}});
-  const rows=Object.entries(m).sort((a,b)=>b[1].sec-a[1].sec);
-  if(!rows.length)return `<h2>Tiempo dedicado (7 días)</h2><div class="card mute center">Aún no hay tiempo registrado. Usa "Iniciar" en una tarea.</div>`;
-  const tot=rows.reduce((a,r)=>a+r[1].sec,0),mx=rows[0][1].sec;
-  return `<h2>Tiempo dedicado (7 días)</h2><div class="card"><div class="trow"><b>Total enfocado</b><b>${fmtMin(tot)}</b></div></div>`+rows.map(([id,o])=>{const k=S.cfg.tasks.find(x=>x.id===id);return `<div class="card"><div class="trow"><div class="tt">${esc(k?k.title:'Tarea eliminada')}</div><b>${fmtMin(o.sec)}</b></div><div class="bar" style="margin:8px 0 6px"><i style="width:${Math.round(o.sec/mx*100)}%"></i></div><div class="mute">Promedio ${fmtMin(o.sec/o.days.size)} por día · ${o.n} ${o.n===1?'sesión':'sesiones'}</div></div>`}).join('');
+  const from=addD(today(),-6),m={},byDay={};
+  recs().forEach(e=>{if(e.d>=from){const o=m[e.task]=m[e.task]||{sec:0,days:new Set(),n:0};o.sec+=e.sec;o.days.add(e.d);o.n++;byDay[e.d]=(byDay[e.d]||0)+e.sec}});
+  const rows=Object.entries(m).sort((a,b)=>b[1].sec-a[1].sec),tot=rows.reduce((a,r)=>a+r[1].sec,0),nd=Object.keys(byDay).length;
+  const tiles=`<div class="tiles"><div class="card"><div class="big">${fmtMin(focusOn(today()))}</div><div class="mute">Enfoque hoy</div></div><div class="card"><div class="big">${fmtMin(tot)}</div><div class="mute">Enfoque 7 días</div></div></div>${nd?`<div class="card"><div class="trow"><span>Promedio por día trabajado</span><b>${fmtMin(tot/nd)}</b></div></div>`:''}`;
+  if(!rows.length)return `<h2>Tiempo dedicado</h2>${tiles}<div class="card mute center">Aún no hay tiempo registrado. Se mide cuando ella inicia una tarea.</div>`;
+  const mx=rows[0][1].sec;
+  return `<h2>Tiempo dedicado</h2>${tiles}`+rows.map(([id,o])=>{const k=S.cfg.tasks.find(x=>x.id===id),b=k&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card"><div class="trow"><div class="tt">${esc(k?k.title:'Tarea eliminada')}</div><b>${fmtMin(o.sec)}</b></div><div class="bar" style="margin:8px 0 6px"><i style="width:${Math.round(o.sec/mx*100)}%"></i></div><div class="mute">${b?esc(b.name)+' · ':''}Promedio ${fmtMin(o.sec/o.n)} por vez · ${o.n} ${o.n===1?'vez':'veces'}</div></div>`}).join('');
+}
+function viewStats(){
+  const t=today(),w=range(7),m=range(30),sk=streak(),bs=bestStreak();
+  const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])})}
+  return `<div class="head"><h1>Estadísticas</h1></div>
+  <div class="tiles"><div class="card"><div class="big">${w??'—'}${w!=null?'%':''}</div><div class="mute">Cumplimiento 7 días</div></div><div class="card"><div class="big">${m??'—'}${m!=null?'%':''}</div><div class="mute">Cumplimiento 30 días</div></div>
+  <div class="card"><div class="big">${sk}</div><div class="mute">Racha actual (días)</div></div><div class="card"><div class="big">${bs}</div><div class="mute">Mejor racha (días)</div></div></div>
+  ${heat()}
+  ${timeCard()}
+  <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente</div>'}`;
+}
+// ----- tareas y bloques (supervisor) -----
+function taskLine(k){return `<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div><span class="mute">›</span></div>`}
+function viewTareas(){
+  const ts=S.cfg.tasks.filter(k=>!k.arch),bl=S.cfg.blocks||[];
+  const loose=ts.filter(k=>!bl.some(b=>b.id===k.block));
+  return `<div class="head"><h1>Tareas</h1><div class="row"><button onclick="blockModal()">+ Bloque</button><button class="pri" onclick="taskModal()">+ Tarea</button></div></div>
+  ${!ts.length&&!bl.length?'<div class="card mute">Aquí armas todo tú. Crea <b>bloques</b> (por ejemplo "Mañana" o "Atención a clientes") y dentro agrega <b>tareas</b>, cada una con sus <b>subtareas</b> si lo necesitas.</div>':''}
+  ${bl.map(b=>{const l=ts.filter(k=>k.block===b.id);return `<div class="bh"><b>${esc(b.name)}</b><button class="ghost" onclick="blockModal('${b.id}')">Editar bloque</button></div>${l.length?l.map(taskLine).join(''):'<div class="card mute center">Sin tareas en este bloque</div>'}`}).join('')}
+  ${loose.length?`${bl.length?'<div class="bh"><b>Sin bloque</b></div>':''}${loose.map(taskLine).join('')}`:''}`;
 }
 let TF={};
-function viewTareas(){
-  const ts=S.cfg.tasks.filter(k=>!k.arch);
-  return `<div class="head"><h1>Tareas</h1><div class="row"><button onclick="tplModal()">Plantillas</button><button class="pri" onclick="taskModal()">+ Nueva</button></div></div>
-  ${ts.length?ts.map(k=>`<div class="card row" onclick="taskModal('${k.id}')"><div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):'Puntual: '+k.date}${k.time?' · '+k.time:''}${k.essential?' · prioritaria':''}</div></div><span class="mute">›</span></div>`).join(''):'<div class="card mute center">Aún no hay tareas. Crea la primera.</div>'}`;
-}
-const TPL=[
- {n:'Apertura del día',t:[{title:'Revisar agenda y prioridades del día',time:'09:00',essential:true},{title:'Revisar correos y mensajes',time:'09:30'},{title:'Ordenar el puesto de trabajo',time:'10:00'}]},
- {n:'Cierre del día',t:[{title:'Cierre del día',time:'17:30',essential:true,steps:['Anotar pendientes para mañana','Archivar y guardar documentos','Ordenar el escritorio','Apagar equipos']}]},
- {n:'Orden semanal (viernes)',days:[5],t:[{title:'Ordenar archivos y carpetas',time:'16:00'},{title:'Resumen de la semana',time:'16:45',essential:true,steps:['Qué se logró','Qué quedó pendiente','Prioridades de la próxima semana']}]}
-];
-function tplModal(){modal(`<h3>Plantillas</h3><p class="mute">Agrega varias tareas de una vez. Luego puedes editarlas.</p>${TPL.map((x,i)=>`<div class="card" onclick="addTpl(${i})"><div class="tt">${esc(x.n)}</div><div class="mute">${x.t.map(k=>esc(k.title)).join(' · ')}</div></div>`).join('')}`)}
-function addTpl(i){const x=TPL[i];x.t.forEach((k,j)=>S.cfg.tasks.push({id:'t'+Date.now().toString(36)+j,title:k.title,desc:'',kind:'fija',days:x.days||[1,2,3,4,5],date:null,time:k.time||'',essential:!!k.essential,steps:k.steps||[],from:today()}));closeModal();saveCfg();toast('Tareas agregadas')}
+function blockModal(id){const b=(S.cfg.blocks||[]).find(x=>x.id===id);
+  modal(`<h3>${b?'Editar bloque':'Nuevo bloque'}</h3><label>Nombre</label><input id="bn" value="${esc(b?b.name:'')}" placeholder="Ej: Mañana, Atención a clientes, Administración"><button class="pri" style="width:100%" onclick="saveBlock('${id||''}')">Guardar</button>${b?`<p class="center"><button class="ghost danger" onclick="delBlock('${id}')">Eliminar bloque</button></p><p class="mute center">Las tareas del bloque no se borran: pasan a "Sin bloque".</p>`:''}`)}
+function saveBlock(id){const n=$('#bn').value.trim();if(!n)return toast('Ponle un nombre');S.cfg.blocks=S.cfg.blocks||[];if(id){S.cfg.blocks.find(x=>x.id===id).name=n}else S.cfg.blocks.push({id:uid(),name:n});closeModal();saveCfg()}
+function delBlock(id){if(!confirm('¿Eliminar este bloque?'))return;S.cfg.blocks=S.cfg.blocks.filter(x=>x.id!==id);S.cfg.tasks.forEach(k=>{if(k.block===id)k.block=''});closeModal();saveCfg()}
 function taskModal(id){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  TF=k?{...k,days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[]};
+  TF=k?{...k,days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:''};
   drawTask();
 }
-function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm').value;TF.essential=g('te').checked;if(g('ts'))TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
+function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm').value;TF.essential=g('te').checked;TF.block=g('tb').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
 function drawTask(){
+  const bl=S.cfg.blocks||[];
   modal(`<h3>${TF.id?'Editar tarea':'Nueva tarea'}</h3>
-  <label>Tarea</label><input id="tt" value="${esc(TF.title)}" placeholder="Ej: Revisar correos">
+  <label>Tarea</label><input id="tt" value="${esc(TF.title)}" placeholder="Ej: Responder consultas de clientes">
   <label>Detalle (opcional)</label><input id="td" value="${esc(TF.desc)}">
+  <label>Bloque</label><select id="tb"><option value="">Sin bloque</option>${bl.map(b=>`<option value="${b.id}" ${TF.block===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
+  <label>Subtareas (opcional, una por línea)</label><textarea id="ts" rows="3" placeholder="Ej: Revisar la bandeja de entrada">${esc((TF.steps||[]).join('\n'))}</textarea>
   <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button></div>
   ${TF.kind==='fija'?`<label>Días</label><div class="pills">${[1,2,3,4,5,6,0].map(x=>`<button class="${TF.days.includes(x)?'on':''}" onclick="syncTF();TF.days=TF.days.includes(${x})?TF.days.filter(y=>y!==${x}):[...TF.days,${x}];drawTask()">${DN[x]}</button>`).join('')}</div>`:`<label>Fecha</label><input id="tdate" type="date" value="${TF.date}">`}
-  <label>Pasos (opcional, uno por línea)</label><textarea id="ts" rows="3" placeholder="Ej: Contar la caja">${esc((TF.steps||[]).join('\n'))}</textarea>
   <label>Hora límite (opcional)</label><input id="tm" type="time" value="${TF.time||''}">
-  <label class="row" style="color:var(--tx)"><input id="te" type="checkbox" style="width:auto;margin:0" ${TF.essential?'checked':''}> Prioritaria</label><p></p>
+  <label class="row" style="color:var(--tx);text-transform:none;font-size:14.5px;letter-spacing:0"><input id="te" type="checkbox" style="width:auto;margin:0" ${TF.essential?'checked':''}> Prioritaria</label><p></p>
   <button class="pri" style="width:100%" onclick="saveTask()">Guardar</button>
   ${TF.id?`<p class="center"><button class="ghost danger" onclick="delTask()">Eliminar tarea</button></p>`:''}`);
 }
 function saveTask(){
   syncTF();if(!TF.title.trim())return toast('Ponle un nombre');
   if(TF.kind==='fija'&&!TF.days.length)return toast('Elige al menos un día');
-  const o={id:TF.id||'t'+Date.now().toString(36),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.time||'',essential:TF.essential,steps:TF.steps||[],from:TF.from||today()};
+  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.time||'',essential:TF.essential,steps:TF.steps||[],block:TF.block||'',from:TF.from||today()};
   const i=S.cfg.tasks.findIndex(x=>x.id===o.id);if(i>=0)S.cfg.tasks[i]=o;else S.cfg.tasks.push(o);
   closeModal();saveCfg();
 }
@@ -277,58 +400,15 @@ function noteModal(id,d){
   modal(`<h3>${boss()?'Comentario para ella':'Nota'}</h3><p class="mute">${esc(k.title)}</p><textarea id="nt" rows="3" placeholder="${boss()?'Ej: Falta adjuntar el archivo':'Ej: Queda esperando respuesta del cliente'}"></textarea><button class="pri" style="width:100%" onclick="saveNote('${id}','${d}')">Enviar</button>`);
 }
 function saveNote(id,d){const v=$('#nt').value.trim();if(!v)return;closeModal();send({type:boss()?'comment':'note',task:id,d,text:v})}
-function viewAjustes(){
-  const th=ls.get('jr_theme','auto');
-  return `<div class="head"><h1>Ajustes</h1></div>
-  <div class="card"><label>Código del equipo</label><div class="code" style="margin:4px 0">${esc(S.code)}</div></div>
-  <div class="card"><label>Tema</label><div class="pills">${[['auto','Auto'],['light','Claro'],['dark','Oscuro']].map(([v,n])=>`<button class="${th===v?'on':''}" onclick="setTheme('${v}')">${n}</button>`).join('')}</div></div>
-  ${pushCard()}
-  ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
-  <button class="danger" style="width:100%" onclick="logout()">Cerrar sesión</button>`;
-}
-const b64u=v=>{const p='='.repeat((4-v.length%4)%4),r=atob((v+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
-const pushOK=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
-let PUSH=null;
-async function checkPush(){if(!pushOK())return;try{const r=await navigator.serviceWorker.ready;PUSH=!!(await r.pushManager.getSubscription())&&Notification.permission==='granted'}catch{PUSH=false}if(S.tab==='ajustes'&&!document.querySelector('.modal'))render()}
-async function enablePush(){
-  try{
-    if(Notification.permission==='denied')return toast('Los avisos están bloqueados en el navegador');
-    if(await Notification.requestPermission()!=='granted')return;
-    const reg=await navigator.serviceWorker.ready,key=await rpc('jr_vapid',{});
-    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(key)});
-    await rpc('jr_push_sub',{p_code:S.code,p_pin:S.pin,p_sub:sub.toJSON(),p_tz:Intl.DateTimeFormat().resolvedOptions().timeZone});
-    PUSH=true;render();toast('Avisos activados');
-  }catch(e){toast(''+e.message)}
-}
-async function disablePush(){try{const r=await navigator.serviceWorker.ready,s=await r.pushManager.getSubscription();if(s){await rpc('jr_push_off',{p_code:S.code,p_pin:S.pin,p_endpoint:s.endpoint});await s.unsubscribe()}PUSH=false;render();toast('Avisos desactivados')}catch(e){toast(''+e.message)}}
-function pushCard(){
-  let b;
-  if(!pushOK()||(isIOS()&&!standalone()))b=`<div class="mute">${isIOS()?'En iPhone, primero instala la app: Compartir ⬆️ → “Agregar a inicio”, y ábrela desde el ícono.':'Este navegador no soporta avisos.'}</div>`;
-  else b=PUSH?`<div class="mute" style="margin-bottom:8px">Activados en este dispositivo. ${boss()?'Te aviso si una tarea prioritaria sigue sin hacerse 15 min después de su hora.':'Te aviso cuando llega la hora límite de una tarea.'}</div><button style="width:100%" onclick="disablePush()">Desactivar avisos</button>`:`<div class="mute" style="margin-bottom:8px">${boss()?'Recibe un aviso si una tarea prioritaria no se hace a tiempo.':'Recibe un aviso cuando llega la hora de una tarea.'}</div><button class="pri" style="width:100%" onclick="enablePush()">Activar avisos</button>`;
-  return `<div class="card"><label>Avisos</label><p style="margin:4px 0 8px"></p>${b}</div>`;
-}
-function setVal(w,label,pin){modal(`<h3>${label}</h3><input id="sv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="doSet('${w}')">Guardar</button>`)}
-async function doSet(w){const v=$('#sv').value.trim();try{await rpc('jr_set',{p_code:S.code,p_pin:S.pin,p_what:w,p_val:v});if(w==='boss'){S.pin=v;ls.set('jr_auth',{code:S.code,pin:v})}closeModal();await refresh();render();toast('Listo')}catch(e){toast(''+e.message)}}
+function msgModal(){const m=S.cfg.msg||{};
+  modal(`<h3>Mensaje para ${esc(S.name)}</h3><p class="mute">Lo verá arriba en "Hoy" durante ese día.</p><textarea id="mg" rows="3" placeholder="Ej: Hoy la prioridad es el reporte mensual">${esc(m.text||'')}</textarea><label>Para</label><div class="pills"><button id="m0" class="on" onclick="this.classList.add('on');$('#m1').classList.remove('on')">Hoy</button><button id="m1" onclick="this.classList.add('on');$('#m0').classList.remove('on')">Mañana</button></div><button class="pri" style="width:100%" onclick="saveMsg()">Publicar</button>${m.text?`<p class="center"><button class="ghost danger" onclick="S.cfg.msg=null;closeModal();saveCfg()">Quitar mensaje</button></p>`:''}`)}
+function saveMsg(){const t=$('#mg').value.trim();if(!t)return;const d=$('#m1').classList.contains('on')?addD(today(),1):today();S.cfg.msg={text:t,date:d};closeModal();saveCfg();toast('Mensaje publicado')}
 
-function render(){
-  applyTheme();const a=$('#app');
-  if(!S.code){a.innerHTML=viewLogin();return}
-  const IC={hoy:'<svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',hist:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>',tareas:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',ajustes:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>'};
-  const tabs=boss()?[['hoy',IC.hoy,'Hoy'],['hist',IC.hist,'Historial'],['tareas',IC.tareas,'Tareas'],['ajustes',IC.ajustes,'Ajustes']]:[['hoy',IC.hoy,'Hoy'],['hist',IC.hist,'Progreso'],['ajustes',IC.ajustes,'Ajustes']];
-  if(!tabs.some(t=>t[0]===S.tab))S.tab='hoy';
-  const v={hoy:viewHoy,hist:viewHist,tareas:viewTareas,ajustes:viewAjustes}[S.tab]();
-  a.innerHTML=`<div class="wrap">${v}</div><div class="nav">${tabs.map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render();if(S.tab==='ajustes')checkPush()">${i}${n}</button>`).join('')}</div>`;
-}
-
-
-
-// ---- temporizador / pomodoro ----
+// ---------- temporizador / pomodoro ----------
 const POMO={w:25*60,b:5*60,l:15*60};
 let TM=ls.get('jr_timer',null),AC=null;
 const fmtT=x=>{x=Math.max(0,Math.ceil(x));return pad(Math.floor(x/60))+':'+pad(x%60)};
-const fmtMin=x=>{const m=Math.round(x/60);return m<1?'<1 min':m>=60?Math.floor(m/60)+' h '+pad(m%60)+' min':m+' min'};
-const timeOn=(id,d)=>S.ev.reduce((a,e)=>a+(e.type==='time'&&e.task===id&&e.d===d?(e.sec||0):0),0);
-function activeNow(id,d){if(d!==today())return false;let l=null;for(const e of S.ev)if(e.task===id&&e.d===d&&(e.type==='tstart'||e.type==='time'))l=e;return !!l&&l.type==='tstart'&&(!l.at||Date.now()-new Date(l.at)<4*36e5)}
+const fmtMin=x=>{const m=Math.round(x/60);return m<1?(x>0?'<1 min':'0 min'):m>=60?Math.floor(m/60)+' h '+pad(m%60)+' min':m+' min'};
 const tmEl=()=>TM.paused?TM.acc:TM.acc+(Date.now()-TM.t0)/1000;
 const tmDur=()=>TM.mode==='free'?Infinity:TM.phase==='work'?POMO.w:(TM.pomos%4===0?POMO.l:POMO.b);
 const tmFocus=()=>TM.focus+(TM.phase==='work'?tmEl():0);
@@ -349,32 +429,85 @@ function tmBar(){
   const k=S.cfg.tasks.find(x=>x.id===TM.task)||{title:'Tarea'};
   const lab=TM.mode==='free'?'Cronómetro':(TM.phase==='work'?'Enfoque · Pomodoro '+(TM.pomos+1):'Descanso');
   const d=document.createElement('div');d.className='tbar'+(TM.phase==='break'?' brk':'');
-  d.innerHTML=`<div class="sp"><div class="tbl">${lab} · ${esc(k.title)}</div><div class="tbt" id="tbt"></div></div><button onclick="tmPause()">${TM.paused?'Seguir':'Pausar'}</button><button class="pri" onclick="tmStop()">Terminar</button>`;
+  d.innerHTML=`<div class="sp"><div class="tbl">${lab} · ${esc(k.title)}</div><div class="tbt" id="tbt"></div></div><button onclick="tmPause()">${TM.paused?'Seguir':'Pausar'}</button><button class="pri" onclick="tmFinishModal()">Terminar</button>`;
   document.body.appendChild(d);tmTick();
 }
 function tmChoose(id){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  modal(`<h3>${esc(k.title)}</h3><p class="mute">Elige cómo trabajar esta tarea. Se registra el tiempo de enfoque.</p>
-  <button class="pri" style="width:100%;margin-bottom:8px" onclick="tmStart('${id}','pomo')">Pomodoro · 25 min de enfoque + 5 de descanso</button>
-  <button style="width:100%" onclick="tmStart('${id}','free')">Cronómetro libre</button>`);
+  modal(`<h3>${esc(k.title)}</h3><p class="mute">Elige cómo trabajar esta tarea. Se registra cuánto tiempo le dedicas.</p>
+  <button class="opt" onclick="tmStart('${id}','pomo')"><b>Pomodoro</b><span>25 min de enfoque + 5 de descanso, en ciclos</span></button>
+  <button class="opt" onclick="tmStart('${id}','free')"><b>Cronómetro</b><span>Mide cuánto tardas, sin pausas automáticas</span></button>
+  <p class="center"><button class="ghost" style="color:var(--mu)" onclick="markDone('${id}')">Ya la hice, sin cronómetro</button></p>`);
 }
 async function tmStart(id,mode){
   closeModal();
-  if(TM&&TM.task!==id){if(!confirm('Ya hay un temporizador en curso. ¿Terminarlo y empezar este?'))return;await tmStop(true)}
+  if(TM&&TM.task!==id){if(!confirm('Ya tienes un temporizador en curso. ¿Guardar su tiempo y empezar este?'))return;await tmEnd(false,true)}
   if(TM)return;
   try{AC=AC||new (window.AudioContext||window.webkitAudioContext)()}catch{}
   TM={task:id,d:today(),mode,phase:'work',t0:Date.now(),acc:0,paused:false,focus:0,pomos:0};ls.set('jr_timer',TM);
-  tmBar();render();send({type:'tstart',task:id,d:TM.d,mode,tm:nowHM()});
+  tmBar();send({type:'note',kind:'tstart',task:id,d:TM.d,mode,tm:nowHM()});
 }
 function tmPause(){if(!TM)return;if(TM.paused){TM.t0=Date.now();TM.paused=false}else{TM.acc=tmEl();TM.paused=true}ls.set('jr_timer',TM);tmBar()}
-async function tmStop(quiet){
-  if(!TM)return;const t=TM,sec=Math.round(tmFocus());TM=null;ls.set('jr_timer',null);document.querySelector('.tbar')?.remove();document.body.classList.remove('hastm');
-  if(sec>=15){await send({type:'time',task:t.task,d:t.d,sec,mode:t.mode,pomos:t.pomos});if(!quiet)toast('Registrado: '+fmtMin(sec)+' de enfoque')}
-  else{if(!quiet)toast('Tiempo muy corto, no se registró');render()}
+function tmFinishModal(){
+  if(!TM)return;const k=S.cfg.tasks.find(x=>x.id===TM.task)||{title:'Tarea'};
+  modal(`<h3>${esc(k.title)}</h3><p class="mute">Tiempo de enfoque: <b>${fmtMin(tmFocus())}</b></p>
+  <button class="opt" onclick="tmEnd(true)"><b>Terminar tarea</b><span>Queda completada con el tiempo registrado</span></button>
+  <button class="opt" onclick="tmEnd(false)"><b>Guardar tiempo y dejarla pendiente</b><span>Sigue sin terminar para retomarla después</span></button>
+  <p class="center"><button class="ghost" onclick="closeModal()">Seguir trabajando</button></p>`);
+}
+async function tmEnd(finish,quiet){
+  closeModal();if(!TM)return;
+  const t=TM,sec=Math.round(tmFocus());
+  TM=null;ls.set('jr_timer',null);tmBar();
+  if(finish){await send({type:'done',task:t.task,d:t.d,tm:nowHM(),sec,mode:t.mode,pomos:t.pomos});toast('Tarea terminada · '+fmtMin(sec))}
+  else if(sec>=15){await send({type:'note',kind:'time',task:t.task,d:t.d,sec,mode:t.mode,pomos:t.pomos});if(!quiet)toast('Tiempo guardado · '+fmtMin(sec))}
+  else render();
 }
 setInterval(tmTick,1000);
 
-// ---- instalación como app ----
+// ---------- avisos push (se muestran solo si el servidor los tiene habilitados) ----------
+const b64u=v=>{const p='='.repeat((4-v.length%4)%4),r=atob((v+p).replace(/-/g,'+').replace(/_/g,'/'));return Uint8Array.from([...r].map(c=>c.charCodeAt(0)))};
+const pushOK=()=>'serviceWorker' in navigator&&'PushManager' in window&&'Notification' in window;
+let PUSH=null,PAV=false;
+async function checkPush(){
+  if(!pushOK()||!S.code)return;
+  try{await rpc('jr_vapid',{});PAV=true}catch{PAV=false;return}
+  try{const r=await navigator.serviceWorker.ready;PUSH=!!(await r.pushManager.getSubscription())&&Notification.permission==='granted'}catch{PUSH=false}
+  if(S.tab==='ajustes'&&!document.querySelector('.modal'))render();
+}
+async function enablePush(){
+  try{
+    if(Notification.permission==='denied')return toast('Los avisos están bloqueados en el navegador');
+    if(await Notification.requestPermission()!=='granted')return;
+    const reg=await navigator.serviceWorker.ready,key=await rpc('jr_vapid',{});
+    const sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(key)});
+    await rpc('jr_push_sub',{p_code:S.code,p_pin:S.pin,p_sub:sub.toJSON(),p_tz:Intl.DateTimeFormat().resolvedOptions().timeZone});
+    PUSH=true;render();toast('Avisos activados');
+  }catch(e){toast(e.message)}
+}
+async function disablePush(){try{const r=await navigator.serviceWorker.ready,s=await r.pushManager.getSubscription();if(s){await rpc('jr_push_off',{p_code:S.code,p_pin:S.pin,p_endpoint:s.endpoint});await s.unsubscribe()}PUSH=false;render();toast('Avisos desactivados')}catch(e){toast(e.message)}}
+function pushCard(){
+  if(!PAV)return '';
+  let b;
+  if(isIOS()&&!standalone())b=`<div class="mute">En iPhone, primero instala la app: Compartir → “Agregar a inicio”, y ábrela desde el ícono.</div>`;
+  else b=PUSH?`<div class="mute" style="margin-bottom:8px">Activados en este dispositivo.</div><button style="width:100%" onclick="disablePush()">Desactivar avisos</button>`:`<div class="mute" style="margin-bottom:8px">${boss()?'Recibe un aviso si una tarea prioritaria no se hace a tiempo.':'Recibe un aviso cuando llega la hora de una tarea.'}</div><button class="pri" style="width:100%" onclick="enablePush()">Activar avisos</button>`;
+  return `<div class="card"><label>Avisos</label><p style="margin:4px 0 8px"></p>${b}</div>`;
+}
+
+// ---------- ajustes ----------
+function viewAjustes(){
+  const th=ls.get('jr_theme','auto');
+  return `<div class="head"><h1>Ajustes</h1></div>
+  <div class="card"><label>Código del equipo</label><div class="code" style="margin:4px 0">${esc(S.code)}</div></div>
+  <div class="card"><label>Tema</label><div class="pills">${[['auto','Auto'],['light','Claro'],['dark','Oscuro']].map(([v,n])=>`<button class="${th===v?'on':''}" onclick="setTheme('${v}')">${n}</button>`).join('')}</div></div>
+  ${pushCard()}
+  ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
+  <button class="danger" style="width:100%" onclick="logout()">Cerrar sesión</button>`;
+}
+function setVal(w,label,pin){modal(`<h3>${label}</h3><input id="sv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="doSet('${w}')">Guardar</button>`)}
+async function doSet(w){const v=$('#sv').value.trim();try{await rpc('jr_set',{p_code:S.code,p_pin:S.pin,p_what:w,p_val:v});if(w==='boss'){S.pin=v;ls.set('jr_auth',{code:S.code,pin:v})}closeModal();await refresh();render();toast('Listo')}catch(e){toast(e.message)}}
+
+// ---------- instalación como app ----------
 let DP=null;
 const standalone=()=>matchMedia('(display-mode:standalone)').matches||navigator.standalone===true;
 const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
@@ -383,9 +516,9 @@ function installBanner(){
   if(standalone()||ls.get('jr_inst_no',0)>Date.now())return;
   let body='';
   if(DP)body=`<button class="pri" style="width:100%" onclick="doInstall()">Instalar</button>`;
-  else if(isIOS())body=`<div class="mute">Toca <b>Compartir ⬆️</b> y luego <b>“Agregar a inicio”</b>.</div>`;
+  else if(isIOS())body=`<div class="mute">Toca <b>Compartir</b> y luego <b>“Agregar a inicio”</b>.</div>`;
   else return;
-  const d=document.createElement('div');d.className='inst'+(S.code?'':' top');
+  const d=document.createElement('div');d.className='inst'+(S.code?'':' top2');
   d.innerHTML=`<div class="row" style="margin-bottom:10px"><img src="icon.svg" alt=""><div class="sp"><b>Instala Jornada como app</b><div class="mute">Acceso directo y pantalla completa.</div></div></div>${body}<button class="ghost" style="width:100%;margin-top:4px" onclick="ls.set('jr_inst_no',Date.now()+6048e5);this.closest('.inst').remove()">Ahora no</button>`;
   document.body.appendChild(d);
 }
@@ -393,15 +526,27 @@ async function doInstall(){if(!DP)return;DP.prompt();await DP.userChoice;DP=null
 window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();DP=e;installBanner()});
 window.addEventListener('appinstalled',()=>{DP=null;document.querySelector('.inst')?.remove()});
 
-// ---- arranque ----
+// ---------- render ----------
+const IC={hoy:'<svg viewBox="0 0 24 24"><rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8.5 12l2.5 2.5 4.5-5"/></svg>',hist:'<svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/></svg>',tareas:'<svg viewBox="0 0 24 24"><path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/></svg>',ajustes:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></svg>'};
+function render(){
+  applyTheme();const a=$('#app');
+  if(!S.code){a.innerHTML=viewLogin();return}
+  const tabs=boss()?[['hoy',IC.hoy,'Hoy'],['hist',IC.hist,'Estadísticas'],['tareas',IC.tareas,'Tareas'],['ajustes',IC.ajustes,'Ajustes']]:[['hoy',IC.hoy,'Hoy'],['hist',IC.hist,'Estadísticas'],['ajustes',IC.ajustes,'Ajustes']];
+  if(!tabs.some(t=>t[0]===S.tab))S.tab='hoy';
+  const v={hoy:viewHoy,hist:viewStats,tareas:viewTareas,ajustes:viewAjustes}[S.tab]();
+  a.innerHTML=`<header class="top"><img src="icon.svg" alt=""><b>Jornada</b><span class="sp"></span><span class="who">${boss()?'Supervisor':esc(S.name)}</span></header><div class="wrap">${v}</div><div class="nav">${tabs.map(([k,i,n])=>`<button class="${S.tab===k?'on':''}" onclick="S.tab='${k}';render();if(S.tab==='ajustes')checkPush()">${i}${n}</button>`).join('')}</div>`;
+  if(TM&&!document.querySelector('.tbar'))tmBar();
+}
+
+// ---------- arranque ----------
 (async()=>{
   applyTheme();
   const au=ls.get('jr_auth'),c=ls.get('jr_cache');
-  if(au&&c){S.pin=au.pin;apply(c);render();if(await refresh())render()}
+  if(au&&c){S.pin=au.pin;apply(c);render();if(await refresh())render();checkPush()}
   else render();
+  setTimeout(installBanner,1200);if(TM)tmBar();
   setInterval(async()=>{if(S.code&&!document.querySelector('.modal')&&document.visibilityState==='visible'){if(await refresh())render()}},30000);
   document.addEventListener('visibilitychange',async()=>{if(document.visibilityState==='visible'&&S.code&&!document.querySelector('.modal')){if(await refresh())render()}});
-  setTimeout(installBanner,1200);checkPush();if(TM)tmBar();
   if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 })();
 </script>
