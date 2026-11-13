@@ -137,16 +137,24 @@ async function rpc(fn,args){
   if(!r.ok)throw new Error((j&&j.message)||'Error de conexión');
   return j;
 }
-let S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],tab:'hoy',day:today()};
+let S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],evAll:[],members:null,me:null,who:'main',multi:false,tab:'hoy',day:today()};
 const boss=()=>S.role==='boss';
 let OUT=ls.get('jr_outbox',[]),LASTSYNC=0,FL=false,AG=false,CREATING=false;
-function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;
+const curWho=()=>boss()?(S.who||'main'):(S.me||'main');
+const mine=k=>(k.who||'main')===curWho();
+const whoName=()=>{if(!boss())return S.name;const m=(S.members||[]).find(x=>x.id===curWho());return m?m.name:S.name};
+const rescope=()=>{S.ev=(S.evAll||[]).filter(e=>(e.u||'main')===curWho())};
+function setWho(id){S.who=id;ls.set('jr_who',id);rescope();render()}
+function apply(r){S.role=r.role;S.code=r.code;S.name=r.name;S.me=r.me||'main';S.multi=Array.isArray(r.members)&&r.role==='boss';
+  S.members=r.role==='boss'?(Array.isArray(r.members)&&r.members.length?r.members:[{id:'main',name:r.name}]):null;
+  if(r.role==='boss'){const w=ls.get('jr_who','main');S.who=(S.members||[]).some(m=>m.id===w)?w:'main'}
   let cf=r.config||{};if(r.role==='boss'&&ls.get('jr_dirty',false)){const l=ls.get('jr_cfg_local',null);if(l&&l.code===r.code)cf=l.cfg}
   S.cfg=Object.assign({tasks:[],blocks:[]},cf);S.cfg.tasks=S.cfg.tasks||[];S.cfg.blocks=S.cfg.blocks||[];
-  S.ev=r.events||[];
-  const have=new Set(S.ev.map(e=>e.cid).filter(Boolean));
+  S.evAll=r.events||[];
+  const have=new Set(S.evAll.map(e=>e.cid).filter(Boolean));
   OUT=OUT.filter(o=>!(o.code===r.code&&have.has(o.ev.cid)));ls.set('jr_outbox',OUT);
-  S.ev=S.ev.concat(OUT.filter(o=>o.code===r.code).map(o=>({...o.ev,by:r.role,pending:true,id:'p'+o.ev.cid})));
+  S.evAll=S.evAll.concat(OUT.filter(o=>o.code===r.code).map(o=>({...o.ev,by:r.role,pending:true,id:'p'+o.ev.cid})));
+  rescope();
   ls.set('jr_cache',r)}
 const pendingN=()=>OUT.filter(o=>o.code===S.code).length+(ls.get('jr_dirty',false)?1:0);
 async function refresh(){if(!S.code)return;try{apply(await rpc('jr_login',{p_code:S.code,p_pin:S.pin}));LASTSYNC=Date.now();return true}catch(e){return false}}
@@ -163,7 +171,7 @@ async function create(){
     modal(`<div class="center"><h3>Equipo creado</h3><p class="mute">Este es el código del equipo. Ella entra con el código y su PIN; tú con el código y el tuyo.</p><div class="code">${code}</div><button class="pri" style="width:100%" onclick="closeModal()">Empezar</button></div>`)
   }catch(e){toast(e.message)}finally{CREATING=false}
 }
-function logout(){TM=null;ls.set('jr_timer',null);document.querySelector('.tbar')?.remove();document.body.classList.remove('hastm');ls.set('jr_auth',null);ls.set('jr_cache',null);S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],tab:'hoy',day:today()};render()}
+function logout(){TM=null;ls.set('jr_timer',null);document.querySelector('.tbar')?.remove();document.body.classList.remove('hastm');ls.set('jr_auth',null);ls.set('jr_cache',null);S={code:null,pin:null,role:null,name:'',cfg:{tasks:[],blocks:[]},ev:[],evAll:[],members:null,me:null,who:'main',multi:false,tab:'hoy',day:today()};render()}
 
 // ---------- lógica de tareas ----------
 function status(id,d){let s=null;for(const e of S.ev)if(e.task===id&&e.d===d&&(e.type==='done'||e.type==='undone'))s=e;return s&&s.type==='done'?s:null}
@@ -171,6 +179,7 @@ function doneAny(id){const m={};for(const e of S.ev)if(e.task===id&&(e.type==='d
 function tasksOn(d){
   const t=today();
   return S.cfg.tasks.filter(k=>{
+    if(!mine(k))return false;
     if(k.kind==='semanal')return false;
     if(k.arch&&d>=k.arch)return false;
     if(d<(k.from||'0000'))return false;
@@ -186,7 +195,7 @@ function weeklyDay(d){let n=0,t=0;const last=addD(wkStart(d),6)===d;
 function dayStat(d){const r=tasksOn(d),w=weeklyDay(d),n=r.filter(k=>status(k.id,d)).length+w.n,total=r.length+w.t;return{n,total,pct:total?Math.round(n/total*100):null}}
 const wkStart=d=>addD(d,-((dow(d)+6)%7));
 const wkDates=d=>{const s=wkStart(d);return [0,1,2,3,4,5,6].map(i=>addD(s,i))};
-function weeklyOn(d){const e=addD(wkStart(d),6);return S.cfg.tasks.filter(k=>k.kind==='semanal'&&e>=(k.from||'0000')&&!(k.arch&&e>=k.arch))}
+function weeklyOn(d){const e=addD(wkStart(d),6);return S.cfg.tasks.filter(k=>mine(k)&&k.kind==='semanal'&&e>=(k.from||'0000')&&!(k.arch&&e>=k.arch))}
 const wkCount=(k,d)=>{const w=wkDates(d);return S.ev.filter(e=>e.type==='done'&&e.task===k.id&&w.includes(e.d)).length};
 const wkTime=(k,d)=>wkDates(d).reduce((a,x)=>a+timeOn(k.id,x),0);
 function streak(){let s=0,d=today();const st=dayStat(d);if(st.total&&st.n<st.total)d=addD(d,-1);
@@ -203,9 +212,9 @@ const subOn=(id,d,i)=>{let v=false;for(const e of S.ev)if(e.type==='note'&&e.kin
 
 // Cada cambio se guarda primero en el dispositivo y se reintenta hasta que el servidor lo confirme.
 async function send(e){
-  const ev={...e,cid:Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
+  const ev={...e,u:curWho(),cid:Date.now().toString(36)+Math.random().toString(36).slice(2,8)};
   OUT.push({code:S.code,ev});ls.set('jr_outbox',OUT);
-  S.ev.push({...ev,by:S.role,pending:true,id:'p'+ev.cid});render();
+  const px={...ev,by:S.role,pending:true,id:'p'+ev.cid};S.ev.push(px);S.evAll.push(px);render();
   await flush();render();
 }
 async function flush(){
@@ -377,14 +386,20 @@ function taskRow(k,d){
   <button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${boss()?'Comentar':'Nota'}</button></div>`;
 }
 function weeklySec(d){const w=weeklyOn(d);if(!w.length)return '';w.sort((a,b)=>(wkCount(a,d)>=(a.times||1))-(wkCount(b,d)>=(b.times||1)));return `<h2>Esta semana</h2>`+w.map(k=>taskRow(k,d)).join('')}
+function whoBar(){
+  if(!boss()||!S.members||S.members.length<2)return '';
+  return `<label>Usuario</label><div class="pills" style="margin-top:2px">${S.members.map(m=>`<button class="${m.id===curWho()?'on':''}" onclick="setWho('${m.id}')">${esc(m.name)}</button>`).join('')}</div>`;
+}
+function getMsg(){const w=curWho();return (S.cfg.msgs&&S.cfg.msgs[w])||(w==='main'?S.cfg.msg:null)||null}
 function viewHoy(){
   const d=S.day,ts=tasksOn(d),st=dayStat(d),t=today(),blocks=S.cfg.blocks||[],foc=focusOn(d),sk=streak();
   const groups=[...blocks.map(b=>({n:b.name,l:ts.filter(k=>k.block===b.id)})),{n:blocks.length?'Otras tareas':'',l:ts.filter(k=>!blocks.some(b=>b.id===k.block))}].filter(g=>g.l.length);
   groups.forEach(g=>g.l.sort((a,b)=>(!!status(a.id,d))-(!!status(b.id,d))));
-  return `<div class="head"><div><h1>${boss()?esc(S.name):'Hola, '+esc(S.name)}</h1><div class="mute">${d===t?'Hoy · ':''}${longD(d)}</div></div>
+  return `<div class="head"><div><h1>${boss()?esc(whoName()):'Hola, '+esc(S.name)}</h1><div class="mute">${d===t?'Hoy · ':''}${longD(d)}</div></div>
   <div class="row"><button onclick="S.day=addD(S.day,-1);render()">‹</button><button onclick="S.day=today();render()" ${d===t?'disabled':''}>Hoy</button><button onclick="S.day=addD(S.day,1);render()" ${d>=t?'disabled':''}>›</button></div></div>
+  ${whoBar()}
   <div class="quote"><small>Frase del día</small><p>${esc(quoteOf(d))}</p></div>
-  ${S.cfg.msg&&S.cfg.msg.text&&S.cfg.msg.date===d?`<div class="card msg"><b>Mensaje${boss()?'':' de tu supervisor'}</b><div>${esc(S.cfg.msg.text)}</div></div>`:''}
+  ${(()=>{const m=getMsg();return m&&m.text&&m.date===d?`<div class="card msg"><b>Mensaje${boss()?'':' de tu supervisor'}</b><div>${esc(m.text)}</div></div>`:''})()}
   <div class="card"><div class="row"><div class="big">${st.total?st.pct+'%':'—'}</div><div class="sp"><div class="bar"><i style="width:${st.pct||0}%"></i></div><div class="mute" style="margin-top:6px">${st.total?`${st.n} de ${st.total} tareas`:'Sin tareas este día'}${foc?` · Enfoque ${fmtMin(foc)}`:''}${sk?` · Racha ${sk} ${sk===1?'día':'días'}`:''}${(()=>{const w=weeklyOn(d);if(!w.length)return '';return ` · Semanales ${w.reduce((a,k)=>a+Math.min(wkCount(k,d),k.times||1),0)}/${w.reduce((a,k)=>a+(k.times||1),0)}`})()}</div></div></div></div>
   ${boss()?`<button style="width:100%;margin-bottom:6px" onclick="msgModal()">Dejar un mensaje para ella</button>`:''}
   ${groups.map(g=>`${g.n?`<h2>${esc(g.n)}</h2>`:'<h2>Tareas</h2>'}${g.l.map(k=>taskRow(k,d)).join('')}`).join('')}
@@ -411,14 +426,14 @@ function timeCard(){
   return `<h2>Tiempo dedicado</h2>${tiles}`+rows.map(([id,o])=>{const k=S.cfg.tasks.find(x=>x.id===id),b=k&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card"><div class="trow"><div class="tt">${esc(k?k.title:'Tarea eliminada')}</div><b>${fmtMin(o.sec)}</b></div><div class="bar" style="margin:8px 0 6px"><i style="width:${Math.round(o.sec/mx*100)}%"></i></div><div class="mute">${b?esc(b.name)+' · ':''}Promedio ${fmtMin(o.sec/o.n)} por vez · ${o.n} ${o.n===1?'vez':'veces'}</div></div>`}).join('');
 }
 function weeklyCard(){
-  const t=today(),ws=[3,2,1,0].map(i=>addD(wkStart(t),-7*i)),tasks=S.cfg.tasks.filter(k=>k.kind==='semanal'&&!k.arch);
+  const t=today(),ws=[3,2,1,0].map(i=>addD(wkStart(t),-7*i)),tasks=S.cfg.tasks.filter(k=>mine(k)&&k.kind==='semanal'&&!k.arch);
   if(!tasks.length)return '';
   return `<h2>Tareas semanales</h2>`+tasks.map(k=>`<div class="card"><div class="trow"><div class="tt">${esc(k.title)}</div><span class="mute">${k.times||1} ${(k.times||1)===1?'vez':'veces'} por semana</span></div><div class="wks">${ws.map(w=>{if(addD(w,6)<(k.from||'0000'))return '<span class="wk na">–</span>';const c=wkCount(k,w),g=k.times||1;return `<span class="wk ${c>=g?'ok':(w===wkStart(t)?'cur':'bad')}">${c}/${g}</span>`}).join('')}</div></div>`).join('')+`<div class="mute" style="margin:-2px 2px 4px">Últimas 4 semanas; la última es la actual.</div>`;
 }
 function viewStats(){
   const t=today(),w=range(7),m=range(30),sk=streak(),bs=bestStreak();
   const late=[];for(let i=0;i<7;i++){const d=addD(t,-i);tasksOn(d).forEach(k=>{if(d<t&&!status(k.id,d))late.push([d,k])});if(d<t&&addD(wkStart(d),6)===d)weeklyOn(d).forEach(k=>{const m=(k.times||1)-wkCount(k,d);if(m>0)late.push([d,{title:k.title+' (semanal: faltó '+m+(m===1?' vez':' veces')+')'}])})}
-  return `<div class="head"><h1>Estadísticas</h1></div>
+  return `<div class="head"><h1>Estadísticas</h1></div>${whoBar()}
   <div class="tiles"><div class="card"><div class="big">${w??'—'}${w!=null?'%':''}</div><div class="mute">Cumplimiento 7 días</div></div><div class="card"><div class="big">${m??'—'}${m!=null?'%':''}</div><div class="mute">Cumplimiento 30 días</div></div>
   <div class="card"><div class="big">${sk}</div><div class="mute">Racha actual (días)</div></div><div class="card"><div class="big">${bs}</div><div class="mute">Mejor racha (días)</div></div></div>
   ${heat()}
@@ -451,9 +466,9 @@ function dayView(ts){
   <div class="mute center" style="margin-top:4px">~ = tiempo estimado según lo que ella tardó en esas tareas.</div>`;
 }
 function viewTareas(){
-  const ts=S.cfg.tasks.filter(k=>!k.arch),bl=S.cfg.blocks||[];
+  const ts=S.cfg.tasks.filter(k=>!k.arch&&mine(k)),bl=S.cfg.blocks||[];
   return `<div class="head"><h1>Tareas</h1><div class="row"><button onclick="blockModal()">+ Bloque</button><button class="pri" onclick="taskModal()">+ Tarea</button></div></div>
-  <div class="pills" style="margin-top:-4px"><button class="${TV==='bloque'?'on':''}" onclick="setTV('bloque')">Por bloque</button><button class="${TV==='dia'?'on':''}" onclick="setTV('dia')">Por día de la semana</button></div>
+  ${whoBar()}<div class="pills" style="margin-top:-4px"><button class="${TV==='bloque'?'on':''}" onclick="setTV('bloque')">Por bloque</button><button class="${TV==='dia'?'on':''}" onclick="setTV('dia')">Por día de la semana</button></div>
   ${!ts.length&&!bl.length?'<div class="card mute">Aquí armas todo tú. Crea <b>bloques</b> (por ejemplo "Mañana" o "Atención a clientes") y dentro agrega <b>tareas</b>, cada una con sus <b>subtareas</b> si lo necesitas.</div>':''}
   ${TV==='dia'?dayView(ts):blockView(ts,bl)}`;
 }
@@ -464,15 +479,16 @@ function saveBlock(id){const n=$('#bn').value.trim();if(!n)return toast('Ponle u
 function delBlock(id){if(!confirm('¿Eliminar este bloque?'))return;S.cfg.blocks=S.cfg.blocks.filter(x=>x.id!==id);S.cfg.tasks.forEach(k=>{if(k.block===id)k.block=''});closeModal();saveCfg()}
 function taskModal(id){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  TF=k?{...k,days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1};
+  TF=k?{...k,who:k.who||'main',days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1,who:curWho()};
   drawTask();
 }
-function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm')?g('tm').value:'';if(g('tw'))TF.times=+g('tw').value;TF.essential=g('te').checked;TF.block=g('tb').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
+function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm')?g('tm').value:'';if(g('tw'))TF.times=+g('tw').value;TF.essential=g('te').checked;TF.block=g('tb').value;if(g('tu'))TF.who=g('tu').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
 function drawTask(){
   const bl=S.cfg.blocks||[];
   modal(`<h3>${TF.id?'Editar tarea':'Nueva tarea'}</h3>
   <label>Tarea</label><input id="tt" value="${esc(TF.title)}" placeholder="Ej: Responder consultas de clientes">
   <label>Detalle (opcional)</label><input id="td" value="${esc(TF.desc)}">
+  ${(S.members||[]).length>1?`<label>Asignada a</label><select id="tu">${S.members.map(m=>`<option value="${m.id}" ${TF.who===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select>`:''}
   <label>Bloque</label><select id="tb"><option value="">Sin bloque</option>${bl.map(b=>`<option value="${b.id}" ${TF.block===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
   <label>Subtareas (opcional, una por línea)</label><textarea id="ts" rows="3" placeholder="Ej: Revisar la bandeja de entrada">${esc((TF.steps||[]).join('\n'))}</textarea>
   <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button><button class="${TF.kind==='semanal'?'on':''}" onclick="syncTF();TF.kind='semanal';drawTask()">Semanal</button></div>
@@ -485,7 +501,7 @@ function drawTask(){
 function saveTask(){
   syncTF();if(!TF.title.trim())return toast('Ponle un nombre');
   if(TF.kind==='fija'&&!TF.days.length)return toast('Elige al menos un día');
-  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.kind==='semanal'?'':(TF.time||''),times:TF.kind==='semanal'?(TF.times||1):null,essential:TF.essential,steps:TF.steps||[],block:TF.block||'',from:TF.from||today()};
+  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.kind==='semanal'?'':(TF.time||''),times:TF.kind==='semanal'?(TF.times||1):null,essential:TF.essential,steps:TF.steps||[],block:TF.block||'',who:TF.who||curWho(),from:TF.from||today()};
   const i=S.cfg.tasks.findIndex(x=>x.id===o.id);if(i>=0)S.cfg.tasks[i]=o;else S.cfg.tasks.push(o);
   closeModal();saveCfg();
 }
@@ -495,9 +511,10 @@ function noteModal(id,d){
   modal(`<h3>${boss()?'Comentario para ella':'Nota'}</h3><p class="mute">${esc(k.title)}</p><textarea id="nt" rows="3" placeholder="${boss()?'Ej: Falta adjuntar el archivo':'Ej: Queda esperando respuesta del cliente'}"></textarea><button class="pri" style="width:100%" onclick="saveNote('${id}','${d}')">Enviar</button>`);
 }
 function saveNote(id,d){const v=$('#nt').value.trim();if(!v)return;closeModal();send({type:boss()?'comment':'note',task:id,d,text:v})}
-function msgModal(){const m=S.cfg.msg||{};
-  modal(`<h3>Mensaje para ${esc(S.name)}</h3><p class="mute">Lo verá arriba en "Hoy" durante ese día.</p><textarea id="mg" rows="3" placeholder="Ej: Hoy la prioridad es el reporte mensual">${esc(m.text||'')}</textarea><label>Para</label><div class="pills"><button id="m0" class="on" onclick="this.classList.add('on');$('#m1').classList.remove('on')">Hoy</button><button id="m1" onclick="this.classList.add('on');$('#m0').classList.remove('on')">Mañana</button></div><button class="pri" style="width:100%" onclick="saveMsg()">Publicar</button>${m.text?`<p class="center"><button class="ghost danger" onclick="S.cfg.msg=null;closeModal();saveCfg()">Quitar mensaje</button></p>`:''}`)}
-function saveMsg(){const t=$('#mg').value.trim();if(!t)return;const d=$('#m1').classList.contains('on')?addD(today(),1):today();S.cfg.msg={text:t,date:d};closeModal();saveCfg();toast('Mensaje publicado')}
+function msgModal(){const m=getMsg()||{};
+  modal(`<h3>Mensaje para ${esc(whoName())}</h3><p class="mute">Lo verá arriba en "Hoy" durante ese día.</p><textarea id="mg" rows="3" placeholder="Ej: Hoy la prioridad es el reporte mensual">${esc(m.text||'')}</textarea><label>Para</label><div class="pills"><button id="m0" class="on" onclick="this.classList.add('on');$('#m1').classList.remove('on')">Hoy</button><button id="m1" onclick="this.classList.add('on');$('#m0').classList.remove('on')">Mañana</button></div><button class="pri" style="width:100%" onclick="saveMsg()">Publicar</button>${m.text?`<p class="center"><button class="ghost danger" onclick="clearMsg()">Quitar mensaje</button></p>`:''}`)}
+function saveMsg(){const t=$('#mg').value.trim();if(!t)return;const d=$('#m1').classList.contains('on')?addD(today(),1):today(),w=curWho();S.cfg.msgs=S.cfg.msgs||{};S.cfg.msgs[w]={text:t,date:d};if(w==='main')S.cfg.msg=null;closeModal();saveCfg();toast('Mensaje publicado')}
+function clearMsg(){const w=curWho();if(S.cfg.msgs)delete S.cfg.msgs[w];if(w==='main')S.cfg.msg=null;closeModal();saveCfg()}
 
 // ---------- temporizador / pomodoro ----------
 const POMO={w:25*60,b:5*60,l:15*60};
@@ -598,9 +615,41 @@ function viewAjustes(){
   <div class="card"><label>Tamaño del texto</label><div class="pills">${[['s','Pequeño'],['n','Normal'],['l','Grande'],['xl','Muy grande']].map(([v,n])=>`<button class="${ls.get('jr_fs','n')===v?'on':''}" onclick="setFS('${v}')">${n}</button>`).join('')}</div></div>
   ${installCard()}
   ${pushCard()}
-  ${boss()?`<div class="card"><button style="width:100%;margin-bottom:8px" onclick="setVal('name','Nombre de tu compañera',false)">Cambiar nombre (${esc(S.name)})</button><button style="width:100%;margin-bottom:8px" onclick="setVal('staff','Nuevo PIN de ella',true)">Cambiar PIN de ella</button><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
+  ${teamCard()}
+  ${boss()?`<div class="card"><button style="width:100%" onclick="setVal('boss','Tu nuevo PIN',true)">Cambiar tu PIN</button></div>`:''}
   <div class="mute center" style="margin:4px 0 12px">Última sincronización: ${LASTSYNC?new Date(LASTSYNC).toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'}):'—'}${pendingN()?' · '+pendingN()+' cambio(s) sin enviar':''}</div>
   <button class="danger" style="width:100%" onclick="logout()">Cerrar sesión</button>`;
+}
+function teamCard(){
+  if(!boss())return '';
+  const ms=S.members||[{id:'main',name:S.name}];
+  return `<div class="card"><label>Equipo</label>${ms.map(m=>`<div class="row" style="margin:10px 0 2px"><div class="sp"><div class="tt">${esc(m.name)}</div></div><button class="ghost" onclick="memberModal('${m.id}')">Editar</button></div>`).join('')}
+  ${S.multi?`<button class="pri" style="width:100%;margin-top:10px" onclick="addMemberModal()">+ Agregar usuario</button>`:`<p class="mute" style="margin:10px 0 0">Para agregar más usuarios hay que actualizar el servidor (un paso único).</p>`}</div>`;
+}
+function addMemberModal(){modal(`<h3>Agregar usuario</h3><p class="mute">Cada usuario entra con el código del equipo y su propio PIN, y ve solo sus tareas.</p><label>Nombre</label><input id="mn" placeholder="Nombre"><label>PIN (4+ caracteres, distinto a los demás)</label><input id="mp" type="password" inputmode="numeric"><button class="pri" style="width:100%" onclick="addMember()">Agregar</button>`)}
+async function addMember(){
+  const n=$('#mn').value.trim(),pn=$('#mp').value.trim();if(!n)return toast('Escribe un nombre');
+  try{const id=await rpc('jr_member_add',{p_code:S.code,p_pin:S.pin,p_name:n,p_mpin:pn});closeModal();await refresh();S.who=id;ls.set('jr_who',id);rescope();S.tab='tareas';render();toast('Usuario agregado. Ahora asígnale tareas.')}
+  catch(e){toast(e.message)}
+}
+function memberModal(id){const m=(S.members||[]).find(x=>x.id===id)||{name:S.name};
+  modal(`<h3>${esc(m.name)}</h3><button style="width:100%;margin-bottom:8px" onclick="memberAct('${id}','name')">Cambiar nombre</button><button style="width:100%;margin-bottom:8px" onclick="memberAct('${id}','pin')">Cambiar PIN</button>${id==='main'?'':`<p class="center"><button class="ghost danger" onclick="memberDel('${id}')">Quitar del equipo</button></p>`}`)}
+function memberAct(id,what){const pin=what==='pin';modal(`<h3>${pin?'Nuevo PIN':'Nuevo nombre'}</h3><input id="mv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="memberSave('${id}','${what}')">Guardar</button>`)}
+async function memberSave(id,what){
+  const v=$('#mv').value.trim();
+  try{
+    if(id==='main')await rpc('jr_set',{p_code:S.code,p_pin:S.pin,p_what:what==='pin'?'staff':'name',p_val:v});
+    else await rpc('jr_member_set',{p_code:S.code,p_pin:S.pin,p_id:id,p_what:what,p_val:v});
+    closeModal();await refresh();render();toast('Listo');
+  }catch(e){toast(e.message)}
+}
+async function memberDel(id){
+  const m=(S.members||[]).find(x=>x.id===id);if(!m||!confirm('¿Quitar a '+m.name+' del equipo? Ya no podrá entrar. Sus tareas se archivan y el historial se conserva.'))return;
+  try{
+    await rpc('jr_member_set',{p_code:S.code,p_pin:S.pin,p_id:id,p_what:'del',p_val:''});
+    S.cfg.tasks.forEach(k=>{if(k.who===id&&!k.arch)k.arch=today()});
+    closeModal();S.who='main';ls.set('jr_who','main');await saveCfg();await refresh();render();toast('Usuario quitado');
+  }catch(e){toast(e.message)}
 }
 function setVal(w,label,pin){modal(`<h3>${label}</h3><input id="sv" ${pin?'type="password" inputmode="numeric"':''}><button class="pri" style="width:100%" onclick="doSet('${w}')">Guardar</button>`)}
 async function doSet(w){const v=$('#sv').value.trim();try{await rpc('jr_set',{p_code:S.code,p_pin:S.pin,p_what:w,p_val:v});if(w==='boss'){S.pin=v;ls.set('jr_auth',{code:S.code,pin:v})}closeModal();await refresh();render();toast('Listo')}catch(e){toast(e.message)}}
