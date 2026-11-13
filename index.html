@@ -207,13 +207,13 @@ function tasksOn(d){
 function isLate(k,d){if(status(k.id,d))return false;const t=today();if(d<t)return true;if(d===t&&k.time&&nowHM()>k.time)return true;return k.kind==='puntual'&&k.date<d}
 // Las semanales cuentan el día en que se terminan; el domingo se suman como pendientes las que faltaron para cumplir la semana.
 function weeklyDay(d){let n=0,t=0;const last=addD(wkStart(d),6)===d;
-  weeklyOn(d).forEach(k=>{const dn=S.ev.filter(x=>x.type==='done'&&x.task===k.id&&x.d===d).length;n+=dn;t+=dn;if(last)t+=Math.max(0,(k.times||1)-wkCount(k,d))});
+  weeklyOn(d).forEach(k=>{const dn=Math.max(0,S.ev.reduce((a,x)=>a+(x.task===k.id&&x.d===d?(x.type==='done'?1:x.type==='undone'?-1:0):0),0));n+=dn;t+=dn;if(last)t+=Math.max(0,(k.times||1)-wkCount(k,d))});
   return{n,t}}
 function dayStat(d){const r=tasksOn(d),w=weeklyDay(d),n=r.filter(k=>status(k.id,d)).length+w.n,total=r.length+w.t;return{n,total,pct:total?Math.round(n/total*100):null}}
 const wkStart=d=>addD(d,-((dow(d)+6)%7));
 const wkDates=d=>{const s=wkStart(d);return [0,1,2,3,4,5,6].map(i=>addD(s,i))};
 function weeklyOn(d){const e=addD(wkStart(d),6);return S.cfg.tasks.filter(k=>mine(k)&&k.kind==='semanal'&&e>=(k.from||'0000')&&!(k.arch&&e>=k.arch))}
-const wkCount=(k,d)=>{const w=wkDates(d);return S.ev.filter(e=>e.type==='done'&&e.task===k.id&&w.includes(e.d)).length};
+const wkCount=(k,d)=>{const w=wkDates(d);return Math.max(0,S.ev.reduce((a,e)=>a+(e.task===k.id&&w.includes(e.d)?(e.type==='done'?1:e.type==='undone'?-1:0):0),0))};
 const wkTime=(k,d)=>wkDates(d).reduce((a,x)=>a+timeOn(k.id,x),0);
 function streak(){let s=0,d=today();const st=dayStat(d);if(st.total&&st.n<st.total)d=addD(d,-1);
   for(let i=0;i<120;i++){const x=dayStat(d);if(!x.total){d=addD(d,-1);continue}if(x.n===x.total){s++;d=addD(d,-1)}else break}return s}
@@ -265,6 +265,7 @@ async function toggleSub(id,i){
   await send({type:'note',kind:'sub',task:id,d,i,on:!subOn(id,d,i)});
 }
 function markDone(id){closeModal();send({type:'done',task:id,d:today(),tm:nowHM()});toast('Tarea terminada')}
+function undoDone(id){send({type:'undone',task:id,d:today()});toast('Desmarcada')}
 async function saveCfg(){ls.set('jr_cfg_local',{code:S.code,cfg:S.cfg});ls.set('jr_dirty',true);render();await flush();render()}
 
 // ---------- UI helpers ----------
@@ -274,6 +275,7 @@ function closeModal(){document.querySelectorAll('.modal').forEach(m=>m.remove())
 function applyTheme(){document.documentElement.dataset.fs=ls.get('jr_fs','n');const v=ls.get('jr_theme','auto');document.documentElement.dataset.theme=(v==='dark'||(v==='auto'&&matchMedia('(prefers-color-scheme:dark)').matches))?'dark':'light'}
 function setFS(v){ls.set('jr_fs',v);render()}
 function setTheme(v){ls.set('jr_theme',v);applyTheme();render()}
+const CHECK='<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 const PLAY='<svg viewBox="0 0 24 24"><path d="M7 4.5v15a1 1 0 0 0 1.5.86l12-7.5a1 1 0 0 0 0-1.72l-12-7.5A1 1 0 0 0 7 4.5z"/></svg>';
 
 // ---------- frases del emprendedor ----------
@@ -398,7 +400,8 @@ function taskRow(k,d){
   ${steps.length?`<div style="margin-top:6px">${steps.map((t,i)=>`<label class="step ${sd[i]?'on':''}"><input type="checkbox" ${sd[i]?'checked':''} ${can&&!on?'':'disabled'} onchange="toggleSub('${k.id}',${i})"> ${esc(t)}</label>`).join('')}</div>`:''}
   <div>${wkly?`<span class="chip">${wc}/${tg} esta semana</span>`:''}${wkly&&!on&&status(k.id,d)?'<span class="chip">Hecha hoy</span>':''}${k.time?`<span class="chip ${late?'bad':''}">Hasta ${k.time}</span>`:''}${k.essential?'<span class="chip warn">Prioritaria</span>':''}${k.kind==='puntual'&&k.date<d?'<span class="chip bad">Arrastrada</span>':''}${on&&on.tm?`<span class="chip">Terminada ${on.tm}</span>`:''}${tsec>0?`<span class="chip">Tiempo ${fmtMin(tsec)}</span>`:''}${late&&!on?'<span class="chip bad">Atrasada</span>':''}${live?'<span class="chip warn">Trabajando ahora</span>':''}${mine?'<span class="chip warn">En curso</span>':''}</div>
   ${ns.map(n=>`<div class="note ${n.by==='boss'?'b':''}">${n.by==='boss'?'<b>Supervisor:</b> ':''}${esc(n.text)}</div>`).join('')}
-  ${can&&!on&&!mine?`<button class="pri go" onclick="tmChoose('${k.id}')">${PLAY} Iniciar</button>`:''}
+  ${can&&!on&&!mine?(k.mode==='check'?`<button class="pri go" onclick="markDone('${k.id}')">${CHECK} Marcar como hecha</button>`:`<button class="pri go" onclick="tmChoose('${k.id}')">${PLAY} Iniciar</button>`):''}
+  ${can&&k.mode==='check'&&status(k.id,d)?`<button class="ghost" style="padding-left:0" onclick="undoDone('${k.id}')">Deshacer</button>`:''}
   </div>
   <button class="ghost" style="color:var(--mu)" onclick="noteModal('${k.id}','${d}')">${asBoss()?'Comentar':'Nota'}</button></div>`;
 }
@@ -459,7 +462,7 @@ function viewStats(){
   <h2>Sin cumplir (7 días)</h2>${late.length?late.map(([d,k])=>`<div class="card"><div class="tt">${esc(k.title)}</div><div class="mute">${longD(d)}</div></div>`).join(''):'<div class="card mute center">Nada pendiente</div>'}`;
 }
 // ----- tareas y bloques (supervisor) -----
-function taskLine(k,bn){const b=bn&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card row" onclick="${SELM?`togSel('${k.id}')`:`taskModal('${k.id}')`}">${SELM?`<div class="chk ${SEL.has(k.id)?'on':''}">${SEL.has(k.id)?'✓':''}</div>`:''}<div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${b?esc(b.name)+' · ':''}${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}</div></div>${SELM?'':'<span class="mute">›</span>'}</div>`}
+function taskLine(k,bn){const b=bn&&(S.cfg.blocks||[]).find(x=>x.id===k.block);return `<div class="card row" onclick="${SELM?`togSel('${k.id}')`:`taskModal('${k.id}')`}">${SELM?`<div class="chk ${SEL.has(k.id)?'on':''}">${SEL.has(k.id)?'✓':''}</div>`:''}<div class="sp"><div class="tt">${esc(k.title)}</div><div class="mute">${b?esc(b.name)+' · ':''}${k.kind==='fija'?'Se repite: '+[1,2,3,4,5,6,0].filter(x=>(k.days||[]).includes(x)).map(x=>DN[x]).join(' '):k.kind==='semanal'?'Semanal: '+(k.times||1)+((k.times||1)===1?' vez':' veces')+' por semana':'Puntual: '+k.date}${k.time?' · hasta '+k.time:''}${k.essential?' · prioritaria':''}${(k.steps||[]).length?' · '+k.steps.length+' subtareas':''}${k.mode==='check'?' · solo tildar':''}</div></div>${SELM?'':'<span class="mute">›</span>'}</div>`}
 let SELM=false,SEL=new Set(),XT=null;
 const others=()=>(S.members||[]).filter(m=>m.id!==curWho());
 function togSel(id){SEL.has(id)?SEL.delete(id):SEL.add(id);render()}
@@ -524,10 +527,11 @@ function saveBlock(id){const n=$('#bn').value.trim();if(!n)return toast('Ponle u
 function delBlock(id){if(!confirm('¿Eliminar este bloque?'))return;S.cfg.blocks=S.cfg.blocks.filter(x=>x.id!==id);S.cfg.tasks.forEach(k=>{if(k.block===id)k.block=''});closeModal();saveCfg()}
 function taskModal(id){
   const k=S.cfg.tasks.find(x=>x.id===id);
-  TF=k?{...k,who:k.who||'main',days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1,who:curWho(),whos:[curWho()]};
+  TF=k?{...k,who:k.who||'main',days:[...(k.days||[])],steps:[...(k.steps||[])]}:{id:null,title:'',desc:'',kind:'fija',days:[1,2,3,4,5],date:today(),time:'',essential:false,steps:[],block:'',times:1,mode:'time',who:curWho(),whos:[curWho()]};
   drawTask();
 }
 function togWho(id){syncTF();if(TF.id)TF.who=id;else{const w=TF.whos||[];TF.whos=w.includes(id)?(w.length>1?w.filter(x=>x!==id):w):[...w,id]}drawTask()}
+function setMode(m){syncTF();TF.mode=m;drawTask()}
 function xferFromEdit(mode){const id=TF.id;closeModal();xferStart([id],mode)}
 function syncTF(){const g=i=>document.getElementById(i);if(!g('tt'))return;TF.title=g('tt').value;TF.desc=g('td').value;TF.time=g('tm')?g('tm').value:'';if(g('tw'))TF.times=+g('tw').value;TF.essential=g('te').checked;TF.block=g('tb').value;TF.steps=g('ts').value.split('\n').map(x=>x.trim()).filter(Boolean);if(g('tdate'))TF.date=g('tdate').value}
 function drawTask(){
@@ -538,6 +542,8 @@ function drawTask(){
   ${(S.members||[]).length>1?`<label>${TF.id?'Asignada a':'Asignar a (uno o varios)'}</label><div class="pills">${S.members.map(m=>`<button class="${(TF.id?TF.who===m.id:(TF.whos||[]).includes(m.id))?'on':''}" onclick="togWho('${m.id}')">${esc(m.name)}</button>`).join('')}</div>`:''}
   <label>Bloque</label><select id="tb"><option value="">Sin bloque</option>${bl.map(b=>`<option value="${b.id}" ${TF.block===b.id?'selected':''}>${esc(b.name)}</option>`).join('')}</select>
   <label>Subtareas (opcional, una por línea)</label><textarea id="ts" rows="3" placeholder="Ej: Revisar la bandeja de entrada">${esc((TF.steps||[]).join('\n'))}</textarea>
+  <label>Cómo se cumple</label><div class="pills"><button class="${TF.mode!=='check'?'on':''}" onclick="setMode('time')">Cuenta tiempo</button><button class="${TF.mode==='check'?'on':''}" onclick="setMode('check')">Solo tildar</button></div>
+  <p class="mute" style="margin:-6px 0 12px">${TF.mode==='check'?'Se marca como hecha con un toque, sin cronómetro. No suma tiempo.':'Se inicia con Pomodoro o cronómetro y se registra cuánto tiempo lleva.'}</p>
   <label>Tipo</label><div class="pills"><button class="${TF.kind==='fija'?'on':''}" onclick="syncTF();TF.kind='fija';drawTask()">Se repite</button><button class="${TF.kind==='puntual'?'on':''}" onclick="syncTF();TF.kind='puntual';drawTask()">Puntual</button><button class="${TF.kind==='semanal'?'on':''}" onclick="syncTF();TF.kind='semanal';drawTask()">Semanal</button></div>
   ${TF.kind==='fija'?`<label>Días</label><div class="pills">${[1,2,3,4,5,6,0].map(x=>`<button class="${TF.days.includes(x)?'on':''}" onclick="syncTF();TF.days=TF.days.includes(${x})?TF.days.filter(y=>y!==${x}):[...TF.days,${x}];drawTask()">${DN[x]}</button>`).join('')}</div>`:TF.kind==='semanal'?`<label>Veces por semana</label><select id="tw">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${(TF.times||1)===n?'selected':''}>${n}</option>`).join('')}</select><p class="mute" style="margin:-6px 0 12px">Se hace en cualquier día de la semana (lun-dom). Ella la ve toda la semana hasta completarla.</p>`:`<label>Fecha</label><input id="tdate" type="date" value="${TF.date}">`}
   ${TF.kind==='semanal'?'':`<label>Hora límite (opcional)</label><input id="tm" type="time" value="${TF.time||''}">`}
@@ -549,7 +555,7 @@ function drawTask(){
 function saveTask(){
   syncTF();if(!TF.title.trim())return toast('Ponle un nombre');
   if(TF.kind==='fija'&&!TF.days.length)return toast('Elige al menos un día');
-  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.kind==='semanal'?'':(TF.time||''),times:TF.kind==='semanal'?(TF.times||1):null,essential:TF.essential,steps:TF.steps||[],block:TF.block||'',who:TF.who||curWho(),from:TF.from||today()};
+  const o={id:TF.id||uid(),title:TF.title.trim(),desc:TF.desc.trim(),kind:TF.kind,days:TF.kind==='fija'?TF.days:[],date:TF.kind==='puntual'?TF.date:null,time:TF.kind==='semanal'?'':(TF.time||''),times:TF.kind==='semanal'?(TF.times||1):null,essential:TF.essential,steps:TF.steps||[],block:TF.block||'',mode:TF.mode==='check'?'check':'time',who:TF.who||curWho(),from:TF.from||today()};
   const i=S.cfg.tasks.findIndex(x=>x.id===o.id);
   if(i>=0)S.cfg.tasks[i]=o;
   else (TF.whos&&TF.whos.length?TF.whos:[curWho()]).forEach((w,n)=>S.cfg.tasks.push({...o,id:n?uid():o.id,who:w}));
