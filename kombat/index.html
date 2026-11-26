@@ -112,6 +112,27 @@
     .module-desc { font-family: var(--font-ui); font-size: 12px; color: var(--text-dim); margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; }
     .module-arrow { color: #444; font-size: 24px; }
 
+    /* ===== HISTORIAL ===== */
+    .module-card.m-hist::after { background: var(--green); }
+    .hist-stats { display: flex; gap: 8px; padding: 16px 20px 8px; flex-shrink: 0; }
+    .hist-stat { flex: 1; background: var(--surface); border: 1px solid var(--border); border-radius: 2px; padding: 12px 8px; text-align: center; }
+    .hist-stat-num { font-family: var(--font-d); font-size: 34px; line-height: 1; color: var(--green); }
+    .hist-stat-lbl { font-family: var(--font-ui); font-size: 10px; letter-spacing: 3px; color: var(--text-dim); text-transform: uppercase; margin-top: 4px; }
+    .hist-scroll { flex: 1; overflow-y: auto; padding: 8px 20px 8px; }
+    .hist-day { font-family: var(--font-ui); font-size: 11px; letter-spacing: 4px; color: #555; text-transform: uppercase; margin: 14px 0 8px; }
+    .hist-item { display: flex; align-items: center; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--border); border-radius: 2px; padding: 12px 14px; margin-bottom: 6px; }
+    .hist-item.t-hiit { border-left-color: var(--red); }
+    .hist-item.t-cal { border-left-color: var(--orange); }
+    .hist-item.t-pir { border-left-color: var(--blue); }
+    .hist-ico { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
+    .hist-body { flex: 1; min-width: 0; }
+    .hist-name { font-family: var(--font-ui); font-size: 16px; font-weight: 700; }
+    .hist-meta { font-family: var(--font-ui); font-size: 12px; color: var(--text-dim); letter-spacing: 1px; margin-top: 2px; }
+    .hist-del { background: none; border: none; color: #444; font-size: 18px; padding: 8px; cursor: pointer; }
+    .hist-del:active { color: var(--red); }
+    .hist-empty { text-align: center; color: var(--text-dim); font-family: var(--font-ui); letter-spacing: 2px; text-transform: uppercase; font-size: 13px; padding: 56px 20px; line-height: 1.8; }
+    .hist-foot { padding: 8px 20px 28px; flex-shrink: 0; }
+
     /* ===== INSTALAR ===== */
     .install-box { padding: 4px 20px 28px; }
     .btn-install {
@@ -526,10 +547,36 @@
       </div>
       <div class="module-arrow">›</div>
     </div>
+    <div class="module-card m-hist" onclick="goHistorial()">
+      <div class="module-icon">📈</div>
+      <div class="module-info">
+        <div class="module-title">HISTORIAL</div>
+        <div class="module-desc" id="home-hist-desc">Tus entrenamientos</div>
+      </div>
+      <div class="module-arrow">›</div>
+    </div>
     <div class="install-box hidden" id="install-box">
       <button class="btn-install hidden" id="btn-install" onclick="installApp()">⬇ INSTALAR APP</button>
       <div class="install-hint hidden" id="install-hint"></div>
     </div>
+  </div>
+</div>
+
+<!-- ==================== HISTORIAL ==================== -->
+<div id="screen-historial" class="screen">
+  <div class="screen-header">
+    <button class="btn-back" onclick="goHome()">‹</button>
+    <div class="screen-title" style="color:var(--green)">HISTORIAL</div>
+    <div class="tag-pill" id="hist-count-pill">0</div>
+  </div>
+  <div class="hist-stats">
+    <div class="hist-stat"><div class="hist-stat-num" id="hs-week">0</div><div class="hist-stat-lbl">Esta semana</div></div>
+    <div class="hist-stat"><div class="hist-stat-num" id="hs-streak">0</div><div class="hist-stat-lbl">Racha (días)</div></div>
+    <div class="hist-stat"><div class="hist-stat-num" id="hs-total">0</div><div class="hist-stat-lbl">Total</div></div>
+  </div>
+  <div class="hist-scroll" id="hist-list"></div>
+  <div class="hist-foot" id="hist-foot">
+    <button class="btn-ghost" style="width:100%; font-size:16px; padding:12px;" onclick="clearHistory()">BORRAR TODO EL HISTORIAL</button>
   </div>
 </div>
 
@@ -781,6 +828,7 @@ let calCurEx = 0;
 let calSerDone = [];
 let calRestTime = REST_S;
 let calRestEnd = 0;
+let calStartTs = 0, pirStartTs = 0;
 
 // PIR
 let pirCombo = -1;
@@ -822,6 +870,7 @@ function showScreen(id) {
 }
 function goHome() {
   clearAll();
+  updateHomeHist();
   showScreen('screen-home');
 }
 let wakeLock = null, wakeWanted = false;
@@ -868,6 +917,94 @@ function setGlow(glowId, color) {
   const g = document.getElementById(glowId);
   if (!g) return;
   g.style.boxShadow = `0 0 40px ${color}`;
+}
+
+// ===================== HISTORIAL =====================
+const HIST_KEY = 'kombat-historial-v1';
+const HIST_TIPO = {
+  hiit: { ico:'🔥', nombre:'HIIT' },
+  cal:  { ico:'💪', nombre:'Calistenia' },
+  pir:  { ico:'🥊', nombre:'Piramidal' },
+};
+function loadHist() {
+  try { const a = JSON.parse(localStorage.getItem(HIST_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+  catch(e) { return []; }
+}
+function saveHist(a) { try { localStorage.setItem(HIST_KEY, JSON.stringify(a)); } catch(e) {} }
+function addHist(tipo, detalle, durSeg) {
+  const a = loadHist();
+  a.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,6), ts: Date.now(), tipo, detalle, dur: Math.max(1, Math.round(durSeg/60)) });
+  saveHist(a);
+  try { navigator.storage && navigator.storage.persist && navigator.storage.persist(); } catch(e) {}
+}
+function dayKey(ts) { const d = new Date(ts); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function startOfWeek() { const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - ((d.getDay()+6)%7)); return d.getTime(); }
+function calcStreak(a) {
+  const days = new Set(a.map(e => dayKey(e.ts)));
+  const d = new Date(); d.setHours(12,0,0,0);
+  if (!days.has(dayKey(d.getTime()))) d.setDate(d.getDate()-1);
+  let n = 0;
+  while (days.has(dayKey(d.getTime()))) { n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function dayLabel(ts) {
+  const hoy = dayKey(Date.now()), ayer = dayKey(Date.now()-86400000);
+  const k = dayKey(ts);
+  if (k === hoy) return 'Hoy';
+  if (k === ayer) return 'Ayer';
+  return new Date(ts).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
+}
+function updateHomeHist() {
+  const a = loadHist();
+  const sem = a.filter(e => e.ts >= startOfWeek()).length;
+  document.getElementById('home-hist-desc').textContent = a.length
+    ? `${a.length} entrenamientos · ${sem} esta semana`
+    : 'Tus entrenamientos';
+}
+function renderHist() {
+  const a = loadHist().sort((x,y) => y.ts - x.ts);
+  document.getElementById('hs-week').textContent = a.filter(e => e.ts >= startOfWeek()).length;
+  document.getElementById('hs-streak').textContent = calcStreak(a);
+  document.getElementById('hs-total').textContent = a.length;
+  document.getElementById('hist-count-pill').textContent = a.length;
+  document.getElementById('hist-foot').style.display = a.length ? 'block' : 'none';
+  const list = document.getElementById('hist-list');
+  if (!a.length) {
+    list.innerHTML = '<div class="hist-empty">Todavía no hay entrenamientos<br>Completá uno y aparece acá</div>';
+    return;
+  }
+  let html = '', last = '';
+  a.forEach(e => {
+    const k = dayKey(e.ts);
+    if (k !== last) { html += `<div class="hist-day">${dayLabel(e.ts)}</div>`; last = k; }
+    const t = HIST_TIPO[e.tipo] || HIST_TIPO.hiit;
+    const hora = new Date(e.ts).toLocaleTimeString('es-AR', { hour:'2-digit', minute:'2-digit' });
+    html += `
+      <div class="hist-item t-${e.tipo}">
+        <div class="hist-ico">${t.ico}</div>
+        <div class="hist-body">
+          <div class="hist-name">${t.nombre}</div>
+          <div class="hist-meta">${e.detalle} · ${e.dur} min · ${hora}</div>
+        </div>
+        <button class="hist-del" onclick="delHist('${e.id}')" aria-label="Borrar">✕</button>
+      </div>`;
+  });
+  list.innerHTML = html;
+}
+function delHist(id) {
+  if (!confirm('¿Borrar este entrenamiento del historial?')) return;
+  saveHist(loadHist().filter(e => e.id !== id));
+  renderHist();
+}
+function clearHistory() {
+  if (!confirm('¿Borrar TODO el historial? No se puede deshacer.')) return;
+  saveHist([]);
+  renderHist();
+}
+function goHistorial() {
+  clearAll();
+  showScreen('screen-historial');
+  renderHist();
 }
 
 // ===================== HOME =====================
@@ -928,6 +1065,7 @@ function tickHIIT() {
       if (hiitStep >= HIIT_EX.length) {
         clearInterval(timerInt); timerInt=null; hiitRunning=false;
         releaseWake();
+        addHist('hiit', HIIT_EX.length+' rondas', HIIT_EX.length*(SOGA_S+EX_S));
         hide('hiit-active'); show('hiit-finish');
         beepFinish(); return;
       }
@@ -1027,6 +1165,7 @@ function startCalistenia() {
   hide('cal-day-select');
   show('cal-active');
   hide('cal-rest');
+  calStartTs = Date.now();
   acquireWake();
   renderCalEx();
   beepStart();
@@ -1070,6 +1209,7 @@ function completeSerie() {
     if (calCurEx >= calExs.length) {
       hide('cal-active');
       releaseWake();
+      addHist('cal', 'Día '+calDay+' · '+(calDay==='A'?'Frente + Piernas':'Dorso + Piernas'), (Date.now()-calStartTs)/1000);
       show('cal-finish');
       beepFinish();
       return;
@@ -1155,6 +1295,7 @@ function startPiramidal() {
   if (pirCombo<0) return;
   pirLevel=0;
   hide('pir-select'); show('pir-active');
+  pirStartTs = Date.now();
   acquireWake();
   renderPirActive();
   beepStart();
@@ -1187,6 +1328,7 @@ function nextPyrLevel() {
   if (pirLevel >= PIRAMIDE.length) {
     hide('pir-active'); show('pir-finish');
     releaseWake();
+    addHist('pir', COMBOS[pirCombo].nombre, (Date.now()-pirStartTs)/1000);
     beepFinish(); return;
   }
   renderPirActive();
@@ -1197,6 +1339,7 @@ function nextPyrLevel() {
 function resetPiramidal() {
   pirLevel=0;
   hide('pir-finish'); show('pir-active');
+  pirStartTs = Date.now();
   acquireWake();
   renderPirActive(); beepStart();
 }
@@ -1235,6 +1378,7 @@ async function installApp() {
   refreshInstallUI();
 }
 refreshInstallUI();
+updateHomeHist();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
