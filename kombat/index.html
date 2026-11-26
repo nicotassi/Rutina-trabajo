@@ -112,6 +112,23 @@
     .module-desc { font-family: var(--font-ui); font-size: 12px; color: var(--text-dim); margin-top: 3px; letter-spacing: 1.5px; text-transform: uppercase; }
     .module-arrow { color: #444; font-size: 24px; }
 
+    /* ===== INSTALAR ===== */
+    .install-box { padding: 4px 20px 28px; }
+    .btn-install {
+      width: 100%;
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--red);
+      border-radius: 2px;
+      font-family: var(--font-d);
+      font-size: 20px;
+      letter-spacing: 3px;
+      padding: 14px;
+      cursor: pointer;
+    }
+    .btn-install:active { background: var(--red-glow); }
+    .install-hint { font-family: var(--font-ui); font-size: 13px; color: var(--text-dim); text-align: center; letter-spacing: 1px; line-height: 1.5; }
+
     /* ===== COMMON ===== */
     .screen-header {
       display: flex;
@@ -508,6 +525,10 @@
         <div class="module-desc">Bolsa · Combos Thai · Técnica + resistencia</div>
       </div>
       <div class="module-arrow">›</div>
+    </div>
+    <div class="install-box hidden" id="install-box">
+      <button class="btn-install hidden" id="btn-install" onclick="installApp()">⬇ INSTALAR APP</button>
+      <div class="install-hint hidden" id="install-hint"></div>
     </div>
   </div>
 </div>
@@ -1184,6 +1205,36 @@ function resetPirSelect() {
   hide('pir-finish');
   initPir();
 }
+
+// ===================== INSTALAR APP =====================
+let deferredInstall = null;
+const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+function refreshInstallUI() {
+  const box = document.getElementById('install-box');
+  const btn = document.getElementById('btn-install');
+  const hint = document.getElementById('install-hint');
+  btn.classList.add('hidden'); hint.classList.add('hidden'); box.classList.add('hidden');
+  if (isStandalone()) return;
+  if (deferredInstall) {
+    btn.classList.remove('hidden'); box.classList.remove('hidden');
+  } else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) {
+    hint.textContent = 'Para instalar: tocá Compartir y elegí “Agregar a inicio”';
+    hint.classList.remove('hidden'); box.classList.remove('hidden');
+  } else if (/android/i.test(navigator.userAgent)) {
+    hint.textContent = 'Para instalar: abrí esta página en Chrome → menú ⋮ → “Instalar app”';
+    hint.classList.remove('hidden'); box.classList.remove('hidden');
+  }
+}
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredInstall = e; refreshInstallUI(); });
+window.addEventListener('appinstalled', () => { deferredInstall = null; refreshInstallUI(); });
+async function installApp() {
+  if (!deferredInstall) return;
+  deferredInstall.prompt();
+  try { await deferredInstall.userChoice; } catch(e) {}
+  deferredInstall = null;
+  refreshInstallUI();
+}
+refreshInstallUI();
 
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
