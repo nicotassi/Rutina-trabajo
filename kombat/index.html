@@ -158,6 +158,16 @@ textarea{resize:none;min-height:5.5rem}
 .sum-rows b{display:block;font-size:1.5rem;font-weight:800;letter-spacing:-.02em}
 .sum-rows small{font-size:.66rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
 
+/* análisis */
+.ins{display:flex;gap:.8rem;align-items:flex-start}
+.ins-ic{flex:none;width:1.7rem;height:1.7rem;border-radius:50%;display:grid;place-items:center;font-size:.85rem;font-weight:800;margin-top:.1rem}
+.ins-ic.good{background:color-mix(in srgb,var(--green) 18%,transparent);color:var(--green)}
+.ins-ic.warn{background:color-mix(in srgb,var(--orange) 20%,transparent);color:var(--orange)}
+.ins-ic.info{background:color-mix(in srgb,var(--blue) 16%,transparent);color:var(--blue)}
+.ins-t{font-weight:600;line-height:1.3}.ins-d{font-size:.84rem;color:var(--mu);margin-top:.15rem;line-height:1.4}
+.ocr-pre{font-size:.7rem;white-space:pre-wrap;color:var(--mu);background:var(--bg);border-radius:.6rem;padding:.6rem;max-height:9rem;overflow:auto;margin-top:.4rem;-webkit-user-select:text;user-select:text}
+.shot-row{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center}
+.shot-row span{font-size:.78rem;font-weight:600;background:var(--card);border:1px solid var(--bd);border-radius:2rem;padding:.25rem .7rem}
 /* progreso */
 .kpis{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:.9rem}
 .kpi{background:var(--card);border:1px solid var(--bd);border-radius:1.1rem;padding:.9rem 1rem}
@@ -268,7 +278,7 @@ function normalize(r){const b=defaults();r=r||{};
   o.cal.dias.forEach(d=>{if(!Array.isArray(d.ej))d.ej=[];if(!d.id)d.id=uid()});
   if(!Array.isArray(o.pir.niveles)||!o.pir.niveles.length)o.pir.niveles=b.pir.niveles;
   if(!Array.isArray(o.pir.combos))o.pir.combos=clone(DEF_COMBOS);
-  o.hiit.soga=clamp(+o.hiit.soga||60,5,600);o.hiit.ex=clamp(+o.hiit.ex||90,5,600);
+  o.set.age=clamp(+o.set.age||0,0,100);o.hiit.soga=clamp(+o.hiit.soga||60,5,600);o.hiit.ex=clamp(+o.hiit.ex||90,5,600);
   o.cal.rest=clamp(+o.cal.rest||0,0,600);o.pir.work=clamp(+o.pir.work||30,5,600);o.pir.rest=clamp(+o.pir.rest||0,0,600);
   return o}
 function load(){
@@ -319,8 +329,9 @@ const TIPO={hiit:{n:'HIIT',c:'c-hiit'},cal:{n:'Calistenia',c:'c-cal'},pir:{n:'Pi
 // ============================================================ HISTORIAL / ESTADÍSTICAS
 const esec=e=>e.sec||((e.dur||0)*60);
 function addHist(tipo,detalle,sec,extra){
-  D.hist.push(Object.assign({id:uid(),ts:Date.now()-sec*1000,tipo,detalle,sec},extra||{}));save();
-  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}}
+  const e=Object.assign({id:uid(),ts:Date.now()-sec*1000,tipo,detalle,sec},extra||{});D.hist.push(e);save();
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(x){}
+  return e.id}
 const dayNum=ts=>{const d=new Date(ts);return Math.round(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/864e5)};
 function mondayOf(d){const m=new Date(d);m.setHours(0,0,0,0);m.setDate(m.getDate()-((m.getDay()+6)%7));return m}
 function streaks(){
@@ -397,9 +408,12 @@ function drawRun(){if(R.done)return;({hiit:drawHiit,cal:drawCal,pir:drawPir})[R.
 function ring(color,num,sub){return `<div class="ring"><svg viewBox="0 0 210 210"><circle class="rbg" cx="105" cy="105" r="93"/><circle id="ringp" class="rp" cx="105" cy="105" r="93" stroke-dasharray="584.3" stroke-dashoffset="0" style="stroke:${color}"/></svg><div class="ring-in"><div class="rnum" id="rnum">${num}</div><div class="rsub">${sub}</div></div></div>`}
 function setRing(left,total){const r=$('ringp');if(r)r.style.strokeDashoffset=584.3*(1-clamp(left/total,0,1));const n=$('rnum');if(n)n.textContent=fmtMS(left)}
 function drawSummary(o){
-  R.done=true;clearInterval(RINT);releaseWake();$('run-el').textContent=fmtMS(o.sec);
+  R.done=true;R.sumOpts=o;clearInterval(RINT);releaseWake();$('run-el').textContent=fmtMS(o.sec);
+  const en=D.hist.find(e=>e.id===o.id),oc=en&&en.ocr;
   $('run-body').innerHTML=`<div class="run-mid fade"><div class="sum-ico">✓</div><div class="phase-big">¡Listo!</div><div class="phase-sub">${esc(o.sub)} · guardado en tu historial</div>
-    <div class="sum-rows">${o.rows.map(r=>`<div><b>${r[1]}</b><small>${r[0]}</small></div>`).join('')}</div></div>`;
+    <div class="sum-rows">${o.rows.map(r=>`<div><b>${r[1]}</b><small>${r[0]}</small></div>`).join('')}</div>
+    ${oc?`<div class="shot-row">${ocrChips(oc)}</div>`:''}
+    <button class="btn" onclick="ocrOpen('${o.id}')">📷 ${oc?'Cambiar':'Agregar'} captura del reloj</button></div>`;
   $('run-ctl').innerHTML=`<button class="btn" onclick="closeRun()">Cerrar</button><button class="btn pri" onclick="closeRun();${o.again}">Repetir</button>`}
 function togglePause(){
   if(!R||R.done)return;
@@ -436,8 +450,8 @@ function drawHiit(){
   $('run-ctl').innerHTML=`<button class="btn" id="pbtn" onclick="togglePause()">${R.run?'Pausa':'Continuar'}</button><button class="btn pri" style="--c:${col}" onclick="skipPhase()">Saltar ›</button>`;
   setRing(R.left,soga?T.soga:T.ex)}
 function finishHiit(){
-  const sec=sSec();addHist('hiit',R.ex.length+' rondas',sec);beepFinish();
-  drawSummary({sec,sub:'HIIT completado',rows:[['Tiempo',fmtMS(sec)],['Rondas',R.ex.length]],again:'startHIIT()'})}
+  const sec=sSec(),id=addHist('hiit',R.ex.length+' rondas',sec);beepFinish();
+  drawSummary({id,sec,sub:'HIIT completado',rows:[['Tiempo',fmtMS(sec)],['Rondas',R.ex.length]],again:'startHIIT()'})}
 
 // ============================================================ CALISTENIA
 function startCal(){
@@ -476,8 +490,8 @@ function tickCal(){
 function finishCal(){
   const sec=sSec(),ej=R.dia.ej.map((e,i)=>({n:e.n,r:R.logs[i]})).filter(x=>x.r.length);
   const reps=ej.reduce((a,x)=>a+x.r.reduce((p,q)=>p+q,0),0);
-  addHist('cal',R.dia.nombre+(R.dia.sub?' · '+R.dia.sub:''),sec,{ej});beepFinish();
-  drawSummary({sec,sub:R.dia.nombre+' completado',rows:[['Tiempo',fmtMS(sec)],['Ejercicios',ej.length],['Reps',reps]],again:'startCal()'})}
+  const id=addHist('cal',R.dia.nombre+(R.dia.sub?' · '+R.dia.sub:''),sec,{ej});beepFinish();
+  drawSummary({id,sec,sub:R.dia.nombre+' completado',rows:[['Tiempo',fmtMS(sec)],['Ejercicios',ej.length],['Reps',reps]],again:'startCal()'})}
 
 // ============================================================ PIRAMIDALES
 function pirChoose(){
@@ -521,8 +535,8 @@ function tickPir(){
   R.lastLeft=R.left}
 function finishPir(){
   const sec=sSec(),P=D.pir,reps=P.niveles.reduce((a,b)=>a+b,0);
-  addHist('pir',R.combo.n,sec,{niv:P.niveles.length,reps});beepFinish();
-  drawSummary({sec,sub:'Pirámide completada',rows:[['Tiempo',fmtMS(sec)],['Niveles',P.niveles.length],['Reps',reps]],again:'pirChoose()'})}
+  const id=addHist('pir',R.combo.n,sec,{niv:P.niveles.length,reps});beepFinish();
+  drawSummary({id,sec,sub:'Pirámide completada',rows:[['Tiempo',fmtMS(sec)],['Niveles',P.niveles.length],['Reps',reps]],again:'pirChoose()'})}
 // "Repetir" en piramidales vuelve a elegir combo; el cierre ya refrescó la vista
 
 // ============================================================ EDITORES (comunes)
@@ -657,7 +671,9 @@ function statsView(){
   // progreso calistenia
   const map={};D.hist.filter(e=>e.tipo==='cal'&&e.ej).sort((a,b)=>a.ts-b.ts).forEach(e=>e.ej.forEach(x=>{(map[x.n]=map[x.n]||[]).push(x.r.reduce((a,b)=>a+b,0))}));
   const prog=Object.entries(map).sort((a,b)=>b[1].length-a[1].length).slice(0,8);
-  return `<div class="seg" style="margin-top:.8rem">${[['7','7 días'],['30','30 días'],['all','Todo']].map(p=>`<button class="${per===p[0]?'on':''}" onclick="V.per='${p[0]}';render()">${p[1]}</button>`).join('')}</div>
+  const ins=insights(),oc=H2(D.hist);
+  return `<div class="grp-t">Análisis</div><div class="grp">${ins.map(i=>`<div class="li ins"><div class="ins-ic ${i.l}">${i.l==='good'?'✓':i.l==='warn'?'!':'i'}</div><div class="sp"><div class="ins-t">${esc(i.t)}</div><div class="ins-d">${esc(i.d)}</div></div></div>`).join('')}</div>
+  <div class="seg" style="margin-top:1.2rem">${[['7','7 días'],['30','30 días'],['all','Todo']].map(p=>`<button class="${per===p[0]?'on':''}" onclick="V.per='${p[0]}';render()">${p[1]}</button>`).join('')}</div>
   <div class="kpis"><div class="kpi"><b>${H.length}</b><small>Entrenamientos</small></div><div class="kpi"><b>${fmtLong(tot)}</b><small>Tiempo total</small></div>
     <div class="kpi"><b>${st.cur}</b><small>Racha actual</small></div><div class="kpi"><b>${st.best}</b><small>Mejor racha</small></div></div>
   <div class="grp-t">Minutos por semana</div>
@@ -667,6 +683,7 @@ function statsView(){
   <div class="card">${tipos.map(x=>`<div class="tbar ${TIPO[x.t].c}"><div class="tbar-h"><span>${TIPO[x.t].n}</span><span>${x.n} · ${fmtLong(x.s)}</span></div><div class="bar"><i style="width:${x.n/mxt*100}%"></i></div></div>`).join('')}</div>
   <div class="grp-t">Últimos 14 días</div>
   <div class="card"><div class="dots">${dots.map(d=>`<div><i class="${d.on?'on':''}"></i>${d.l}</div>`).join('')}</div></div>
+  ${oc.length?pulseView(oc):''}
   ${prog.length?`<div class="grp-t">Calistenia · repeticiones por sesión</div><div class="grp">${prog.map(([n,v])=>{const last=v[v.length-1],prev=v.length>1?v[v.length-2]:null,dl=prev===null?null:last-prev;
     return `<div class="li"><div class="sp"><div class="li-t">${esc(n)}</div><div class="li-s">Última: ${last} reps · ${v.length} ${v.length===1?'sesión':'sesiones'}</div></div><div class="prog">${v.length>1?spark(v.slice(-8)):''}<span class="delta ${dl===null||dl===0?'eq':dl>0?'up':'dn'}">${dl===null?'—':dl>0?'+'+dl:dl}</span></div></div>`}).join('')}</div>`:''}`}
 function histView(){
@@ -676,9 +693,212 @@ function histView(){
   a.forEach(e=>{const k=dayNum(e.ts);
     if(k!==last){if(open)h+='</div>';h+=`<div class="hday">${esc(dayLabel(e.ts))}</div><div class="grp">`;last=k;open=true}
     const t=TIPO[e.tipo]||TIPO.hiit,hora=new Date(e.ts).toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
-    h+=`<div class="hi ${t.c}"><div class="wc-ico">${IC[e.tipo]||IC.hiit}</div><div class="sp"><div class="hi-t">${t.n} · ${esc(e.detalle)}</div><div class="hi-s">${fmtMS(esec(e))} min · ${hora}${e.reps?' · '+e.reps+' reps':''}</div>${e.ej&&e.ej.length?`<div class="hi-d">${e.ej.map(x=>esc(x.n)+' '+x.r.join('·')).join(' — ')}</div>`:''}</div><button class="x" onclick="delHist('${e.id}')" aria-label="Borrar">✕</button></div>`});
+    h+=`<div class="hi ${t.c}"><div class="wc-ico">${IC[e.tipo]||IC.hiit}</div><div class="sp"><div class="hi-t">${t.n} · ${esc(e.detalle)}</div><div class="hi-s">${fmtMS(esec(e))} min · ${hora}${e.reps?' · '+e.reps+' reps':''}</div>${e.ej&&e.ej.length?`<div class="hi-d">${e.ej.map(x=>esc(x.n)+' '+x.r.join('·')).join(' — ')}</div>`:''}${e.ocr?`<div class="hi-d">📷 ${ocrChips(e.ocr,true)}</div>`:''}</div><button class="x" onclick="ocrOpen('${e.id}')" aria-label="Captura">📷</button><button class="x" onclick="delHist('${e.id}')" aria-label="Borrar">✕</button></div>`});
   return h+'</div>'}
 function delHist(id){if(!confirm('¿Borrar este entrenamiento del historial?'))return;D.hist=D.hist.filter(e=>e.id!==id);save();render()}
+
+// ============================================================ CAPTURAS (OCR en el celular)
+const OCR_BASE=new URL('vendor/ocr/',location.href).href;
+let OCRW=null;
+function loadScript(src){return new Promise((ok,ko)=>{const t=document.createElement('script');t.src=src;t.onload=ok;t.onerror=()=>ko(new Error('No se pudo cargar el lector'));document.head.appendChild(t)})}
+async function getOCR(onProg){
+  if(OCRW)return OCRW;
+  if(!window.Tesseract)await loadScript(OCR_BASE+'tesseract.min.js');
+  OCRW=await Tesseract.createWorker('eng',1,{workerPath:OCR_BASE+'worker.min.js',corePath:OCR_BASE+'tesseract-core-lstm.wasm.js',langPath:OCR_BASE,gzip:true,logger:onProg});
+  return OCRW}
+async function loadBitmap(file){
+  if(window.createImageBitmap){try{return await createImageBitmap(file)}catch(e){}}
+  return await new Promise((ok,ko)=>{const im=new Image();im.onload=()=>ok(im);im.onerror=()=>ko(new Error('Imagen inválida'));im.src=URL.createObjectURL(file)})}
+// Escala, pasa a blanco y negro y deja el texto oscuro sobre fondo claro (las capturas de relojes suelen ser oscuras)
+async function prepImage(file){
+  const bmp=await loadBitmap(file),w=bmp.width,h=bmp.height;
+  let sc=1;if(w>1600)sc=1600/w;else if(w<1000)sc=1000/w;
+  const c=document.createElement('canvas');c.width=Math.round(w*sc);c.height=Math.round(h*sc);
+  const x=c.getContext('2d',{willReadFrequently:true});x.drawImage(bmp,0,0,c.width,c.height);
+  const im=x.getImageData(0,0,c.width,c.height),d=im.data,n=d.length/4;
+  let sum=0;for(let i=0;i<d.length;i+=4)sum+=.299*d[i]+.587*d[i+1]+.114*d[i+2];
+  const dark=sum/n<125,g=new Uint8Array(n),hist=new Uint32Array(256);
+  for(let i=0,j=0;i<d.length;i+=4,j++){let v=dark?255-Math.max(d[i],d[i+1],d[i+2]):.299*d[i]+.587*d[i+1]+.114*d[i+2];v=v|0;g[j]=v;hist[v]++}
+  let lo=0,hi=255,acc=0;for(;lo<255&&acc<n*.01;lo++)acc+=hist[lo];acc=0;for(;hi>0&&acc<n*.01;hi--)acc+=hist[hi];
+  const rg=Math.max(40,hi-lo);
+  for(let i=0,j=0;i<d.length;i+=4,j++){const v=clamp(((g[j]-lo)/rg)*255,0,255);d[i]=d[i+1]=d[i+2]=v}
+  x.putImageData(im,0,0);return c}
+function parseDur(str){
+  if(!str)return null;str=String(str).trim();let m;
+  if(m=str.match(/^(\d+):(\d{1,2}):(\d{1,2})$/))return +m[1]*3600+ +m[2]*60+ +m[3];
+  if(m=str.match(/^(\d+):(\d{1,2})$/))return +m[1]*60+ +m[2];
+  const v=parseFloat(str.replace(',','.'));return isNaN(v)?null:Math.round(v*60)}
+const fmtHMS=s=>s>=3600?Math.floor(s/3600)+':'+String(Math.floor(s%3600/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'):fmtMS(s);
+// Lee los datos del texto reconocido (sin IA: expresiones regulares y palabras clave en español/inglés)
+function parseShot(raw,hint){
+  const lines=raw.split(/\n/).map(l=>l.trim()).filter(Boolean).map(l=>l.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''));
+  const num=t=>parseFloat(String(t).replace(',','.')),prev=i=>lines[i-1]||'',ctx=i=>prev(i)+' '+lines[i];
+  const out={dur:null,kcal:null,hrAvg:null,hrMax:null,km:null};
+  // duración
+  let best=-1;const durC=(v,sc)=>{if(v>0&&v<86400&&sc>best){best=sc;out.dur=v}};
+  lines.forEach((l,i)=>{const c=ctx(i),kw=/dura|tiempo|time|total|entrena|workout|activ|elapsed/.test(c),pace=/ritmo|pace|\/\s*km|min\/km/.test(c);let m;
+    if(m=l.match(/\b(\d{1,2}):(\d{2}):(\d{2})\b/))durC(+m[1]*3600+ +m[2]*60+ +m[3],kw?4:3);
+    else if(!pace&&kw&&(m=l.match(/\b(\d{1,3}):(\d{2})\b/)))durC(+m[1]*60+ +m[2],2);
+    if(m=l.match(/\b(\d{1,2})\s*h(?:oras?|r)?\s*(\d{1,2})\s*min/))durC(+m[1]*3600+ +m[2]*60,kw?4:3);
+    else if(!pace&&kw&&(m=l.match(/\b(\d{1,3})\s*min(?:utos?|s)?\b(?!\s*\/)/)))durC(+m[1]*60,1)});
+  if(out.dur==null&&hint>0){let bd=1e9;lines.forEach(l=>{if(/ritmo|pace|\/\s*km|\b[ap]\.?m\.?\b/.test(l))return;const re=/(^|[^:\d])(\d{1,2}):(\d{2})(?![:\d])/g;let m;
+      while(m=re.exec(l)){const v=+m[2]*60+ +m[3],r=v/hint;if(r>=.5&&r<=2&&Math.abs(v-hint)<bd){bd=Math.abs(v-hint);out.dur=v}}})}
+  // calorías
+  let kb=-1;lines.forEach((l,i)=>{let v=null,m;
+    if(m=l.match(/(\d{1,5}(?:[.,]\d)?)\s*(?:kcal|kcals|cal\b|cals\b|calorias)/))v=num(m[1]);
+    else if(/calor/.test(l)&&(m=l.match(/\b(\d{2,5})\b/)))v=num(m[1]);
+    else if(/calor/.test(l)&&lines[i+1]&&(m=lines[i+1].match(/^(\d{2,5})\b/)))v=num(m[1]);
+    if(v!=null&&v>=5&&v<=9999){const lb=lines[i]+' '+(/\d/.test(prev(i))?'':prev(i)),sc=(/total/.test(lb)?2:0)+(/activ/.test(lb)?1:0);if(sc>kb){kb=sc;out.kcal=Math.round(v)}}});
+  // pulso
+  const unl=[];lines.forEach((l,i)=>{
+    const hrCtx=/bpm|ppm|lpm|[il1|]pm|frec|\bfc\b|pulso|heart|corazon|cardi/.test(ctx(i));let m;const re=/\b(\d{2,3})\s*(?:bpm|ppm|lpm|[il1|]pm|lat\/min|latidos)/g,found=[];
+    while(m=re.exec(l))found.push(+m[1]);
+    if(!found.length&&hrCtx&&/prom|medi|avg|average|max/.test(l)&&(m=l.match(/\b(\d{2,3})\b/)))found.push(+m[1]);
+    if(!found.length&&hrCtx&&/^(\d{2,3})$/.test(l)&&/prom|medi|avg|average|max/.test(prev(i)))found.push(+l);
+    found.filter(v=>v>=40&&v<=230).forEach(v=>{
+      const lab=(/max/.test(l)?'max':/prom|medi|avg|average/.test(l)?'avg':/max/.test(prev(i))?'max':/prom|medi|avg|average/.test(prev(i))?'avg':'');
+      if(lab==='max'&&out.hrMax==null)out.hrMax=v;else if(lab==='avg'&&out.hrAvg==null)out.hrAvg=v;else if(!lab)unl.push(v)})});
+  if(out.hrAvg==null&&unl.length)out.hrAvg=unl.length>1&&out.hrMax==null?Math.min(...unl):unl[0];
+  if(out.hrMax==null&&unl.length>1)out.hrMax=Math.max(...unl);
+  if(out.hrAvg!=null&&out.hrMax!=null&&out.hrAvg>out.hrMax){const t=out.hrAvg;out.hrAvg=out.hrMax;out.hrMax=t}
+  // distancia
+  let db=-1;lines.forEach((l,i)=>{const m=l.match(/(\d{1,3}(?:[.,]\d{1,2})?)\s*(?:km|kms|kilometros)\b(?!\s*\/\s*h)/);if(m){const v=num(m[1]),sc=/dist/.test(ctx(i))?2:1;if(v>0&&v<500&&sc>db){db=sc;out.km=v;if(Number.isInteger(v)&&v>=100&&!/[.,]/.test(m[1]))out.km=v/100}}});
+  return out}
+function isSub(x,y){let i=0;for(const c of y)if(c===x[i])i++;return i===x.length}
+function mergeField(a,b){
+  if(a==null)return b;if(b==null||a===b)return a;
+  const da=String(a).replace(/\D/g,''),db=String(b).replace(/\D/g,'');
+  if(da===db)return Number.isInteger(a)?b:a;
+  if(isSub(da,db))return b;if(isSub(db,da))return a;return a}
+function mergeShot(a,b,hint){
+  const o={};['kcal','hrAvg','hrMax','km'].forEach(k=>{o[k]=mergeField(a[k],b[k])});
+  o.dur=(a.dur!=null&&b.dur!=null&&a.dur!==b.dur&&hint)?(Math.abs(a.dur-hint)<=Math.abs(b.dur-hint)?a.dur:b.dur):(a.dur!=null?a.dur:b.dur);
+  if(o.hrAvg!=null&&o.hrMax!=null&&o.hrAvg>o.hrMax){const t=o.hrAvg;o.hrAvg=o.hrMax;o.hrMax=t}
+  return o}
+function ocrChips(o,txt){
+  const a=[];if(o.dur)a.push('⏱ '+fmtHMS(o.dur));if(o.hrAvg)a.push('❤ '+o.hrAvg+(o.hrMax?' / '+o.hrMax:'')+' bpm');if(o.kcal)a.push('🔥 '+o.kcal+' kcal');if(o.km)a.push('📍 '+String(o.km).replace('.',',')+' km');
+  return txt?a.join(' · '):a.map(x=>`<span>${x}</span>`).join('')}
+function ocrOpen(id){
+  const en=D.hist.find(e=>e.id===id);if(!en)return;
+  openSheet(`<h3>Captura del entrenamiento</h3>
+  <p class="note" style="margin-top:0">Subí una captura de tu reloj o app de fitness (duración, pulso, calorías, distancia). Se lee en tu celular: la imagen no se sube a ningún lado ni se guarda; solo quedan los números.</p>
+  <label class="btn pri big" style="--c:var(--green);display:block;text-align:center">📷 Elegir captura<input type="file" accept="image/*" class="hidden" onchange="ocrPick(this,'${id}')"></label>
+  <button class="btn big" onclick="ocrForm('${id}',en0(),'')">Cargar datos a mano</button>`)}
+function en0(){return {dur:null,kcal:null,hrAvg:null,hrMax:null,km:null}}
+async function ocrPick(inp,id){
+  const f=inp.files&&inp.files[0];if(!f)return;
+  openSheet(`<h3>Leyendo captura…</h3><div class="bar" style="width:100%;height:.5rem"><i id="ocr-bar" style="width:3%;background:var(--green)"></i></div><p class="note" id="ocr-st">Preparando imagen…</p>`);
+  try{
+    const c=await prepImage(f);
+    const lab={'loading tesseract core':'Cargando el lector (solo la primera vez)…','initializing tesseract':'Iniciando…','loading language traineddata':'Cargando idioma (solo la primera vez)…','initializing api':'Iniciando…','recognizing text':'Leyendo texto…'};
+    let pass=0;
+    const w=await getOCR(m=>{const el=$('ocr-st'),b=$('ocr-bar');if(!el)return;el.textContent=(lab[m.status]||m.status)+(m.status==='recognizing text'?' ('+(pass+1)+'/2) '+Math.round(m.progress*100)+'%':'');
+      const pr=m.status==='recognizing text'?.3+(pass+m.progress)/2*.7:.3*Math.min(1,m.progress||0);if(b)b.style.width=Math.max(3,Math.round(pr*100))+'%'});
+    const en=D.hist.find(e=>e.id===id),hint=en?esec(en):0;
+    // Dos lecturas (bloque y texto disperso) y se combinan: cada una falla en cosas distintas
+    await w.setParameters({tessedit_pageseg_mode:'6',preserve_interword_spaces:'1'});
+    const t1=((await w.recognize(c)).data||{}).text||'';pass=1;
+    await w.setParameters({tessedit_pageseg_mode:'11'});
+    const t2=((await w.recognize(c)).data||{}).text||'';
+    ocrForm(id,mergeShot(parseShot(t1,hint),parseShot(t2,hint),hint),t2.trim()+(t1.trim()?'\n— otra lectura —\n'+t1.trim():''));inp.value=''
+  }catch(e){
+    openSheet(`<h3>No pude leer la captura</h3><p class="note">${esc(e.message||'Error')}. Podés cargar los datos a mano.</p><button class="btn pri big" onclick="ocrForm('${id}',en0(),'')">Cargar a mano</button>`)}}
+function ocrForm(id,o,raw){
+  const en=D.hist.find(e=>e.id===id),ex=Object.assign({},en&&en.ocr,{});
+  const v=Object.assign({},o);Object.keys(v).forEach(k=>{if(v[k]==null&&ex[k]!=null)v[k]=ex[k]});
+  const got=Object.values(o).filter(x=>x!=null).length;
+  openSheet(`<h3>Datos del entrenamiento</h3>
+  <p class="note" style="margin-top:0">${raw?(got?`Detecté ${got} ${got===1?'dato':'datos'}. Revisalos y corregí lo que haga falta.`:'No encontré datos claros en la captura. Completalos a mano.'):'Completá los que tengas.'}</p>
+  <div class="row2"><div><span class="lbl">Duración</span><input type="text" id="o-dur" value="${v.dur?fmtHMS(v.dur):''}" placeholder="mm:ss"></div><div><span class="lbl">Calorías</span><input type="number" inputmode="numeric" id="o-kcal" value="${v.kcal??''}" placeholder="kcal"></div></div>
+  <div class="row2"><div><span class="lbl">Pulso promedio</span><input type="number" inputmode="numeric" id="o-avg" value="${v.hrAvg??''}" placeholder="bpm"></div><div><span class="lbl">Pulso máximo</span><input type="number" inputmode="numeric" id="o-max" value="${v.hrMax??''}" placeholder="bpm"></div></div>
+  <span class="lbl">Distancia (km)</span><input type="text" inputmode="decimal" id="o-km" value="${v.km!=null?String(v.km).replace('.',','):''}" placeholder="opcional">
+  ${raw?`<details style="margin-top:.8rem"><summary class="li-s" style="cursor:pointer">Ver texto reconocido</summary><div class="ocr-pre">${esc(raw)}</div></details>`:''}
+  <button class="btn pri big" style="--c:var(--green)" onclick="ocrSave('${id}')">Guardar</button>
+  ${(en&&en.ocr)?`<button class="btn danger big" onclick="ocrDel('${id}')">Quitar datos de la captura</button>`:''}`)}
+function ocrSave(id){
+  const en=D.hist.find(e=>e.id===id);if(!en)return;
+  const n=(i,a,b)=>{const x=parseFloat(String($(i).value).replace(',','.'));return(x>=a&&x<=b)?x:null};
+  const o={dur:parseDur($('o-dur').value),kcal:n('o-kcal',1,9999),hrAvg:n('o-avg',30,240),hrMax:n('o-max',30,250),km:n('o-km',.01,500)};
+  Object.keys(o).forEach(k=>{if(o[k]==null)delete o[k]});
+  if(!Object.keys(o).length){toast('Completá al menos un dato');return}
+  if(o.hrAvg&&o.hrMax&&o.hrAvg>o.hrMax){toast('El pulso promedio no puede superar al máximo');return}
+  en.ocr=o;save();closeSheet();toast('Captura guardada');
+  if(R&&R.done&&R.sumOpts&&R.sumOpts.id===id)drawSummary(R.sumOpts);else if(V.tab==='progreso')render()}
+function ocrDel(id){const en=D.hist.find(e=>e.id===id);if(!en)return;delete en.ocr;save();closeSheet();if(R&&R.done&&R.sumOpts&&R.sumOpts.id===id)drawSummary(R.sumOpts);else if(V.tab==='progreso')render()}
+
+// ============================================================ ANÁLISIS (reglas simples, sin IA)
+const H2=h=>h.filter(e=>e.ocr&&(e.ocr.hrAvg||e.ocr.kcal)).sort((a,b)=>a.ts-b.ts);
+const avgOf=a=>a.reduce((p,q)=>p+q,0)/a.length;
+function insights(){
+  const out=[],H=[...D.hist].sort((a,b)=>a.ts-b.ts),now=Date.now(),mon=mondayOf(new Date()).getTime();
+  if(H.length<3)return [{l:'info',t:'Todavía hay pocos datos',d:'Con 3 o más entrenamientos empiezo a mostrarte tendencias, alertas y recomendaciones.'}];
+  const wk=i=>{const s=new Date(mon);s.setDate(s.getDate()-7*i);const e=new Date(s);e.setDate(e.getDate()+7);
+    const a=H.filter(x=>x.ts>=s.getTime()&&x.ts<e.getTime());return{n:a.length,min:a.reduce((p,x)=>p+esec(x),0)/60}};
+  const w0=wk(0),w1=wk(1),pv=[2,3,4].map(wk),pvMin=avgOf(pv.map(w=>w.min)),avgN=(w1.n+pv.reduce((p,w)=>p+w.n,0))/4,st=streaks();
+  const since=dayNum(now)-dayNum(H[H.length-1].ts);
+  if(since>=4)out.push({l:'warn',t:`Hace ${since} días que no entrenás`,d:'Volver pronto, aunque sea con una sesión corta, evita perder el ritmo.'});
+  // carga semanal
+  if(w1.min>0&&pvMin>0){const ch=(w1.min-pvMin)/pvMin,pc=Math.round(Math.abs(ch)*100);
+    if(ch>=.3)out.push({l:'warn',t:`Subiste la carga semanal un ${pc}%`,d:`La semana pasada hiciste ${Math.round(w1.min)} min contra un promedio de ${Math.round(pvMin)} min. Subir más de 30% de golpe aumenta el riesgo de fatiga y lesiones: mantené esta semana o sumá un día liviano.`});
+    else if(ch<=-.3)out.push({l:'info',t:`Tu carga semanal bajó un ${pc}%`,d:`La semana pasada: ${Math.round(w1.min)} min, tu promedio venía en ${Math.round(pvMin)} min. Si fue por descanso planificado está bien; si no, retomá de a poco.`});
+    else out.push({l:'good',t:'Carga semanal estable',d:`${Math.round(w1.min)} min la semana pasada, en línea con tu promedio de ${Math.round(pvMin)} min.`})}
+  if(w0.n>0||w1.n>0)out.push({l:'info',t:`Esta semana: ${w0.n} ${w0.n===1?'entrenamiento':'entrenamientos'} · ${Math.round(w0.min)} min`,d:`La semana pasada fueron ${w1.n} y ${Math.round(w1.min)} min.`});
+  // constancia
+  if(avgN>=3)out.push({l:'good',t:`Buena constancia: ${avgN.toFixed(1).replace('.',',')} entrenamientos por semana`,d:'Promedio de las últimas 4 semanas. Mantener este ritmo es lo que más pesa en el progreso.'});
+  else if(avgN<2)out.push({l:'info',t:`Entrenás ${avgN.toFixed(1).replace('.',',')} veces por semana en promedio`,d:'Con 3 sesiones semanales el progreso se nota bastante más.'});
+  if(st.cur>=3)out.push({l:'good',t:`Racha de ${st.cur} días seguidos`,d:st.cur>=st.best?'Es tu mejor racha hasta ahora.':`Tu mejor racha es de ${st.best} días.`});
+  // recuperación y equilibrio
+  const last7=H.filter(e=>e.ts>=now-7*864e5),hi7=last7.filter(e=>e.tipo==='hiit').length;
+  if(hi7>=4)out.push({l:'warn',t:`${hi7} HIIT en los últimos 7 días`,d:'El HIIT exige mucha recuperación. Intercalá calistenia, piramidales o un día de descanso.'});
+  const l30=H.filter(e=>e.ts>=now-30*864e5);
+  if(D.cal.dias.length>1){const cs=D.cal.dias.map(d=>({n:d.nombre,c:l30.filter(e=>e.tipo==='cal'&&String(e.detalle).startsWith(d.nombre)).length}));
+    const mx=cs.reduce((a,b)=>b.c>a.c?b:a),mn=cs.reduce((a,b)=>b.c<a.c?b:a);
+    if(mx.c-mn.c>=2)out.push({l:'info',t:`Hacés más ${mx.n} que ${mn.n}`,d:`En 30 días: ${mx.n} ${mx.c} ${mx.c===1?'vez':'veces'} y ${mn.n} ${mn.c}. Equilibrar evita que un grupo muscular quede atrás.`})}
+  const l14=H.filter(e=>e.ts>=now-14*864e5);
+  if(l14.length>=3)[['hiit','HIIT'],['cal','calistenia'],['pir','piramidales']].forEach(([t,n])=>{if(!l14.some(e=>e.tipo===t)&&H.some(e=>e.tipo===t))out.push({l:'info',t:`Hace más de 2 semanas que no hacés ${n}`,d:'Variar los estímulos mejora técnica, fuerza y resistencia a la vez.'})});
+  // calistenia: progreso por ejercicio
+  const map={};H.filter(e=>e.tipo==='cal'&&e.ej).forEach(e=>e.ej.forEach(x=>{(map[x.n]=map[x.n]||[]).push(x.r.reduce((p,q)=>p+q,0))}));
+  const up=[],stk=[];Object.entries(map).forEach(([n,v])=>{if(v.length<3)return;const lt=v[v.length-1],pa=avgOf(v.slice(0,-1)),l3=v.slice(-3);
+    if(pa>0&&lt>=pa*1.1)up.push({n,pc:Math.round((lt/pa-1)*100)});
+    else if(l3[0]>=l3[1]&&l3[1]>=l3[2])stk.push({n,v:l3[2]})});
+  up.sort((a,b)=>b.pc-a.pc).slice(0,2).forEach(x=>out.push({l:'good',t:`Mejoraste en ${x.n}: +${x.pc}%`,d:'Tu última sesión superó el promedio de las anteriores.'}));
+  stk.slice(0,2).forEach(x=>out.push({l:'warn',t:`Estancado en ${x.n}`,d:`Mismo o menor total en las últimas 3 sesiones (${x.v} reps). Probá sumar una serie, bajar el descanso o pasar a una variante más difícil.`}));
+  // cuándo entrenás
+  if(H.length>=6){const dn=['domingos','lunes','martes','miércoles','jueves','viernes','sábados'],dc=Array(7).fill(0),tc={mañana:0,tarde:0,noche:0};
+    H.forEach(e=>{const d=new Date(e.ts);dc[d.getDay()]++;const h=d.getHours();tc[h>=5&&h<12?'mañana':h>=12&&h<19?'tarde':'noche']++});
+    const di=dc.indexOf(Math.max(...dc)),tt=Object.entries(tc).sort((a,b)=>b[1]-a[1])[0][0];
+    out.push({l:'info',t:`Tu momento fuerte: ${dn[di]} por la ${tt}`,d:'Es cuando más entrenaste hasta ahora. Anclar el hábito a un horario ayuda a sostenerlo.'})}
+  // datos de capturas (pulso y calorías)
+  const oc=H2(H),maxHR=D.set.age?220-D.set.age:0;
+  if(!oc.length)out.push({l:'info',t:'Sumá capturas de tu reloj',d:'Si agregás una captura a un entrenamiento (📷), analizo tu pulso, calorías y cómo evoluciona tu esfuerzo.'});
+  else{
+    const hr=oc.filter(e=>e.ocr.hrAvg),lastHr=hr[hr.length-1];
+    if(lastHr){const a=lastHr.ocr.hrAvg;
+      if(maxHR){const pc=Math.round(a/maxHR*100),z=pc<60?'suave (recuperación)':pc<70?'aeróbica base (quema de grasa)':pc<80?'aeróbica moderada':pc<90?'alta intensidad':'máxima';
+        out.push({l:pc>=90?'warn':'info',t:`Última sesión con pulso: ${a} bpm (${pc}% de tu máximo)`,d:`Zona ${z}, tomando un máximo estimado de ${maxHR} bpm (220 − edad).`})}
+      else out.push({l:'info',t:`Última sesión con pulso: ${a} bpm de promedio`,d:'Cargá tu edad en Ajustes y te digo en qué zona de intensidad entrenaste.'})}
+    const hh=hr.filter(e=>e.tipo==='hiit');
+    if(hh.length>=4){const k=Math.min(3,Math.floor(hh.length/2)),L=avgOf(hh.slice(-k).map(e=>e.ocr.hrAvg)),P=avgOf(hh.slice(-2*k,-k).map(e=>e.ocr.hrAvg)),df=Math.round(L-P);
+      if(df<=-3)out.push({l:'good',t:`Tu pulso promedio en HIIT bajó ${-df} bpm`,d:`De ${Math.round(P)} a ${Math.round(L)} bpm con la misma rutina: suele indicar mejor condición cardiovascular.`});
+      else if(df>=5)out.push({l:'warn',t:`Tu pulso promedio en HIIT subió ${df} bpm`,d:`De ${Math.round(P)} a ${Math.round(L)} bpm. Puede ser más intensidad, pero también fatiga, poco descanso o estrés: mirá cómo dormís y recuperás.`});
+      else out.push({l:'info',t:'Pulso estable en HIIT',d:`Alrededor de ${Math.round(L)} bpm de promedio en tus últimas sesiones.`})}
+    const ef=oc.filter(e=>e.ocr.kcal&&(e.ocr.dur||esec(e))).map(e=>e.ocr.kcal/((e.ocr.dur||esec(e))/60));
+    if(ef.length>=4){const k=Math.min(3,Math.floor(ef.length/2)),L=avgOf(ef.slice(-k)),P=avgOf(ef.slice(-2*k,-k)),pc=Math.round((L/P-1)*100);
+      if(pc>=10)out.push({l:'good',t:`Gastás ${pc}% más calorías por minuto`,d:`${L.toFixed(1).replace('.',',')} kcal/min contra ${P.toFixed(1).replace('.',',')} antes: estás entrenando con más intensidad.`});
+      else if(pc<=-10)out.push({l:'info',t:`Bajó tu gasto por minuto (${pc}%)`,d:`${L.toFixed(1).replace('.',',')} kcal/min contra ${P.toFixed(1).replace('.',',')} antes. Puede ser una sesión más suave o menos ritmo.`})}
+    const mxo=Math.max(...hr.map(e=>e.ocr.hrMax||0));
+    if(maxHR&&mxo>maxHR+5)out.push({l:'info',t:`Tu pulso máximo registrado (${mxo}) supera el estimado (${maxHR})`,d:'La fórmula 220 − edad es aproximada: tu máximo real puede ser más alto. Tomá el registrado como referencia.'})}
+  const ord={warn:0,good:1,info:2};
+  return out.map((x,i)=>({x,i})).sort((a,b)=>ord[a.x.l]-ord[b.x.l]||a.i-b.i).map(o=>o.x).slice(0,9)}
+function pulseView(oc){
+  const hr=oc.filter(e=>e.ocr.hrAvg),kc=oc.filter(e=>e.ocr.kcal),mx=Math.max(0,...oc.map(e=>e.ocr.hrMax||0));
+  return `<div class="grp-t">Pulso y calorías · desde tus capturas</div>
+  <div class="kpis" style="margin-top:0"><div class="kpi"><b>${oc.length}</b><small>Sesiones con datos</small></div>
+    <div class="kpi"><b>${hr.length?Math.round(avgOf(hr.map(e=>e.ocr.hrAvg))):'—'}</b><small>Pulso promedio (bpm)</small></div>
+    <div class="kpi"><b>${kc.length?Math.round(avgOf(kc.map(e=>e.ocr.kcal))):'—'}</b><small>Kcal por sesión</small></div>
+    <div class="kpi"><b>${mx||'—'}</b><small>Pulso máximo (bpm)</small></div></div>
+  ${hr.length>1?`<div class="grp" style="margin-top:.6rem"><div class="li"><div class="sp"><div class="li-t">Pulso promedio</div><div class="li-s">Últimas ${Math.min(10,hr.length)} sesiones</div></div><div class="prog">${spark(hr.slice(-10).map(e=>e.ocr.hrAvg))}</div></div>
+  ${kc.length>1?`<div class="li"><div class="sp"><div class="li-t">Calorías</div><div class="li-s">Últimas ${Math.min(10,kc.length)} sesiones</div></div><div class="prog">${spark(kc.slice(-10).map(e=>e.ocr.kcal))}</div></div>`:''}</div>`:''}`}
 
 // ============================================================ VISTA: AJUSTES
 function viewAjustes(){
@@ -693,12 +913,15 @@ function viewAjustes(){
   <div class="grp"><div class="li"><div class="sp"><div class="li-t">Sonido</div><div class="li-s">Beeps al cambiar de fase</div></div>${sw('sound')}</div>
     <div class="li"><div class="sp"><div class="li-t">Vibración</div><div class="li-s">Si tu celular lo permite</div></div>${sw('vibrate')}</div>
     <div class="li"><div class="sp"><div class="li-t">Mantener pantalla encendida</div><div class="li-s">Durante el entrenamiento</div></div>${sw('wake')}</div></div>
+  <div class="grp-t">Tu perfil</div>
+  <div class="grp"><div class="li"><div class="sp"><div class="li-t">Edad</div><div class="li-s">Opcional · para estimar tu pulso máximo</div></div><input type="number" inputmode="numeric" style="width:5rem;text-align:center" value="${s.age||''}" placeholder="—" onchange="setAge(this.value)"></div></div>
   <div class="grp-t">Tus datos</div>
   <div class="grp"><div class="li" onclick="exportData()"><div class="sp"><div class="li-t">Exportar copia de seguridad</div><div class="li-s">Historial y rutinas en un archivo</div></div>›</div>
     <label class="li" style="cursor:pointer"><div class="sp"><div class="li-t">Importar copia</div><div class="li-s">Restaura desde un archivo</div></div>›<input type="file" accept="application/json,.json" class="hidden" onchange="importData(this)"></label>
     <div class="li" onclick="clearHist()"><div class="sp"><div class="li-t" style="color:var(--red)">Borrar historial</div><div class="li-s">${D.hist.length} entrenamientos guardados</div></div></div></div>
   <p class="note">Todo se guarda en este celular. Si desinstalás la app o borrás los datos del navegador se pierde: exportá una copia de vez en cuando.</p>
   ${isStandalone()?'':`<div class="grp-t">App</div><div class="card">${deferredInstall?`<button class="btn pri big" style="margin-top:0" onclick="installApp()">⬇ Instalar app</button>`:`<p class="li-s">${/iphone|ipad|ipod/i.test(navigator.userAgent)?'Para instalar: tocá Compartir y elegí “Agregar a inicio”.':/android/i.test(navigator.userAgent)?'Para instalar: abrí esta página en Chrome → menú ⋮ → “Instalar app”.':'Instalala desde el menú de tu navegador.'}</p>`}</div>`}`}
+function setAge(v){const n=parseInt(v);D.set.age=(n>=10&&n<=100)?n:0;save()}
 function setPref(k,v){D.set[k]=v;save();applyTheme();render()}
 function toggleSet(k){D.set[k]=!D.set[k];save();if(k==='sound'&&D.set.sound)beep(660,100);render()}
 function exportData(){
