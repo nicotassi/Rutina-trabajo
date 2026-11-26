@@ -751,6 +751,7 @@ let hiitStep = 0;
 let hiitPhase = 'soga';
 let hiitTimeLeft = SOGA_S;
 let hiitRunning = false;
+let hiitEnd = 0, hiitLastLeft = -1, hiitRemainMs = 0;
 
 // CAL
 let calDay = 'A';
@@ -758,15 +759,27 @@ let calExs = CAL_A;
 let calCurEx = 0;
 let calSerDone = [];
 let calRestTime = REST_S;
+let calRestEnd = 0;
 
 // PIR
 let pirCombo = -1;
 let pirLevel = 0;
 
 // ===================== AUDIO =====================
+let AC = null;
+function getAC() {
+  try {
+    if (!AC) AC = new (window.AudioContext||window.webkitAudioContext)();
+    if (AC.state !== 'running') AC.resume();
+  } catch(e) {}
+  return AC;
+}
+// iOS exige un gesto del usuario para habilitar el audio
+['pointerdown','touchend','click'].forEach(ev => document.addEventListener(ev, getAC, {passive:true}));
 function beep(freq=880, dur=150, type='sine', vol=0.3) {
   try {
-    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const ctx = getAC();
+    if (!ctx) return;
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
     osc.connect(g); g.connect(ctx.destination);
@@ -790,7 +803,30 @@ function goHome() {
   clearAll();
   showScreen('screen-home');
 }
+let wakeLock = null, wakeWanted = false;
+async function acquireWake() {
+  wakeWanted = true;
+  try {
+    if ('wakeLock' in navigator && !wakeLock && document.visibilityState === 'visible') {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    }
+  } catch(e) { wakeLock = null; }
+}
+function releaseWake() {
+  wakeWanted = false;
+  if (wakeLock) { wakeLock.release().catch(()=>{}); wakeLock = null; }
+}
+// Al volver a la app: recuperar pantalla encendida y ponerse al día con los cronómetros
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  if (wakeWanted) acquireWake();
+  getAC();
+  if (timerInt) tickHIIT();
+  if (calRestInt) tickCalRest();
+});
 function clearAll() {
+  releaseWake();
   if(timerInt) { clearInterval(timerInt); timerInt=null; }
   if(calRestInt) { clearInterval(calRestInt); calRestInt=null; }
   hiitRunning = false;
@@ -850,35 +886,45 @@ function renderHIITSeq() {
 
 function startHIIT() {
   hiitStep=0; hiitPhase='soga'; hiitTimeLeft=SOGA_S; hiitRunning=true;
+  hiitEnd = Date.now() + SOGA_S*1000; hiitLastLeft = SOGA_S;
   hide('hiit-ready'); show('hiit-active');
   document.getElementById('hiit-pause-btn').textContent='PAUSA';
+  acquireWake();
   beepStart();
   updateHIITDisplay();
-  timerInt = setInterval(tickHIIT, 1000);
+  timerInt = setInterval(tickHIIT, 250);
 }
 
 function tickHIIT() {
   if (!hiitRunning) return;
-  hiitTimeLeft--;
-  if (hiitTimeLeft <= 3 && hiitTimeLeft > 0) beepTick();
-  if (hiitTimeLeft <= 0) {
+  let changed = false;
+  // El tiempo se calcula con el reloj: si la app estuvo en segundo plano, se pone al día
+  while (Date.now() >= hiitEnd) {
     if (hiitPhase === 'soga') {
-      hiitPhase='ejercicio'; hiitTimeLeft=EX_S; beepChange();
+      hiitPhase='ejercicio'; hiitEnd += EX_S*1000;
     } else {
       hiitStep++;
       if (hiitStep >= HIIT_EX.length) {
-        clearInterval(timerInt); timerInt=null;
+        clearInterval(timerInt); timerInt=null; hiitRunning=false;
+        releaseWake();
         hide('hiit-active'); show('hiit-finish');
         beepFinish(); return;
       }
-      hiitPhase='soga'; hiitTimeLeft=SOGA_S; beepChange();
+      hiitPhase='soga'; hiitEnd += SOGA_S*1000;
     }
-    // Pulse on phase change
+    changed = true;
+  }
+  hiitTimeLeft = Math.ceil((hiitEnd - Date.now())/1000);
+  if (changed) {
+    beepChange();
     const n = document.getElementById('hiit-num');
     n.classList.remove('pulse');
     void n.offsetWidth;
     n.classList.add('pulse');
+  } else if (hiitTimeLeft !== hiitLastLeft && hiitTimeLeft <= 3 && hiitTimeLeft > 0) {
+    beepTick();
   }
+  hiitLastLeft = hiitTimeLeft;
   updateHIITDisplay();
 }
 
@@ -906,7 +952,15 @@ function updateHIITDisplay() {
 }
 
 function toggleHIITPause() {
-  hiitRunning = !hiitRunning;
+  if (hiitRunning) {
+    hiitRemainMs = Math.max(0, hiitEnd - Date.now());
+    hiitRunning = false;
+    releaseWake();
+  } else {
+    hiitEnd = Date.now() + hiitRemainMs;
+    hiitRunning = true;
+    acquireWake();
+  }
   document.getElementById('hiit-pause-btn').textContent = hiitRunning ? 'PAUSA' : 'CONTINUAR';
 }
 
@@ -952,6 +1006,7 @@ function startCalistenia() {
   hide('cal-day-select');
   show('cal-active');
   hide('cal-rest');
+  acquireWake();
   renderCalEx();
   beepStart();
 }
@@ -993,6 +1048,7 @@ function completeSerie() {
     calCurEx++;
     if (calCurEx >= calExs.length) {
       hide('cal-active');
+      releaseWake();
       show('cal-finish');
       beepFinish();
       return;
@@ -1013,15 +1069,19 @@ function startCalRest(nextEx) {
   updateCalRest();
   beepChange();
   setGlow('cal-glow','var(--blue-glow)');
-  calRestInt = setInterval(()=>{
-    calRestTime--;
-    if (calRestTime<=3 && calRestTime>0) beepTick();
-    if (calRestTime<=0) {
-      clearInterval(calRestInt); calRestInt=null;
-      endRest(); return;
-    }
-    updateCalRest();
-  }, 1000);
+  calRestEnd = Date.now() + REST_S*1000;
+  calRestInt = setInterval(tickCalRest, 250);
+}
+
+function tickCalRest() {
+  const left = Math.ceil((calRestEnd - Date.now())/1000);
+  if (left <= 0) {
+    clearInterval(calRestInt); calRestInt=null;
+    endRest(); return;
+  }
+  if (left !== calRestTime && left <= 3) beepTick();
+  calRestTime = left;
+  updateCalRest();
 }
 
 function updateCalRest() {
@@ -1074,6 +1134,7 @@ function startPiramidal() {
   if (pirCombo<0) return;
   pirLevel=0;
   hide('pir-select'); show('pir-active');
+  acquireWake();
   renderPirActive();
   beepStart();
 }
@@ -1104,6 +1165,7 @@ function nextPyrLevel() {
   beep(660,100);
   if (pirLevel >= PIRAMIDE.length) {
     hide('pir-active'); show('pir-finish');
+    releaseWake();
     beepFinish(); return;
   }
   renderPirActive();
@@ -1114,6 +1176,7 @@ function nextPyrLevel() {
 function resetPiramidal() {
   pirLevel=0;
   hide('pir-finish'); show('pir-active');
+  acquireWake();
   renderPirActive(); beepStart();
 }
 
